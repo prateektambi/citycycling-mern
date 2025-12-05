@@ -10,6 +10,7 @@ const port = config.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+
 // MongoDB Connection
 mongoose.connect(config.MONGODB_URI);
 const connection = mongoose.connection;
@@ -52,6 +53,13 @@ app.post('/add-user', async (req, res) => {
   }
 });
 
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static('client/build'));
+
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, 'client', 'build', 'index.html'));
+  });
+}
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);

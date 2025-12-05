@@ -1,0 +1,94 @@
+/* src/styles/HomePage.css */
+
+/* Global container styling */
+.home-page {
+    /* Ensures the component spans the full viewport width */
+    width: 100%; 
+    box-sizing: border-box;
+}
+
+/* 1. Hero Section Styling */
+.hero-section {
+    position: relative;
+    width: 100%;
+    /* Set a minimum height for the hero section */
+    height: 65vh; 
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-image {
+    width: 100%;
+    height: 100%;
+    /* Key style for full-width, full-height image */
+    object-fit: cover; 
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.hero-overlay {
+    position: relative;
+    z-index: 2; /* Ensures text is above the image */
+    text-align: center;
+    color: white; /* Text color */
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.4); /* Semi-transparent background for readability */
+    border-radius: 8px;
+}
+
+.hero-overlay h1 {
+    font-size: 3em;
+    margin-bottom: 10px;
+}
+
+.hero-overlay p {
+    font-size: 1.2em;
+}
+
+/* 2. Main Content Styling */
+.main-content {
+    padding: 40px 5%;
+    background-color: #f9f9f9;
+    color: #333;
+    text-align: center;
+    font-size: 1.2em;
+}
+
+.main-content h2 {
+    color: #007bff; /* A typical cycling blue */
+    margin-bottom: 15px;
+}
+
+/* 3. Contact Information Styling */
+.contact-info-block {
+    background-color: #333;
+    color: white;
+    padding: 30px 5%;
+    text-align: center;
+}
+
+
+
+.contact-details h3 {
+    margin-bottom: 15px;
+    color: #66ccff;
+    font-size: 1.7em;
+}
+
+.contact-details p {
+    margin: 5px 0;
+    font-size: 1.2em;
+}
+
+.contact-details a {
+    color: #66ccff;
+    text-decoration: none;
+}
+
+.contact-details a:hover {
+    text-decoration: underline;
+}
