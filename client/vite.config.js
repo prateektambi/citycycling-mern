@@ -10,4 +10,10 @@ export default defineConfig({
       },
     }),
   ],
+  base: '/',
+  build: {
+    outDir: 'dist',
+    // Ensures the asset paths are relative to the root index.html
+    assetsDir: '', 
+  }
 })
