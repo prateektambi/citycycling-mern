@@ -29,9 +29,9 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 
 // Basic route
-app.get('/', (req, res) => {
-  res.send('Hello from the CityCycling backend!');
-});
+// app.get('/', (req, res) => {
+//   res.send('Hello from the CityCycling backend!');
+// });
 
 // Test DB route
 app.get('/users', async (req, res) => {
