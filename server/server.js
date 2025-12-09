@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const path = require('path');
 const config = require('./config');
 
 const app = express();
@@ -53,11 +54,14 @@ app.post('/add-user', async (req, res) => {
   }
 });
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static('client/build'));
 
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, 'client', 'build', 'index.html'));
+if (process.env.NODE_ENV === 'production') {
+  // Static files middleware (must come before the catch-all route)
+  app.use(express.static(path.join(__dirname, '..', 'client', 'dist')));
+
+  // Use /{*splat} to catch all routes including the root (/)
+  app.get('/{*splat}', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));
   });
 }
 
