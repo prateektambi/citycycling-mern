@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 const HowItWorks = () => {
+  useEffect(() => {
+    document.title = 'City Cycling | How It Works';
+  }, []);
+
   return (
     <div>
       <h1>How It Works</h1>

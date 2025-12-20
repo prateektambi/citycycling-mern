@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import '../styles/HomePage.css';
 import HomePageHeroImage from '../assets/HomePageHeroImage.png';
 
 const HomePage = () => {
+  useEffect(() => {
+    document.title = 'City Cycling | Home';
+  }, []);
+
   return (
    <div className="home-page">
       
