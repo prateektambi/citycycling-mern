@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 const LeaveRequest = () => {
+  useEffect(() => {
+    document.title = 'City Cycling | Leave Request';
+  }, []);
+
   return (
     <div>
       <h1>Leave a Rental Request</h1>
