@@ -12,7 +12,7 @@
     position: relative;
     width: 100%;
     /* Set a minimum height for the hero section */
-    height: 65vh; 
+    height: 75vh; 
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -22,8 +22,9 @@
 .hero-image {
     width: 100%;
     height: 100%;
-    /* Key style for full-width, full-height image */
-    object-fit: cover; 
+    /* Key style for full-width, full--height image */
+    object-fit: cover;
+    object-position: center;
     position: absolute;
     top: 0;
     left: 0;
