@@ -29,10 +29,9 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
-// Basic route
-// app.get('/', (req, res) => {
-//   res.send('Hello from the CityCycling backend!');
-// });
+// Routes
+const seedRoutes = require('./routes/seed');
+app.use('/api/seed', seedRoutes);
 
 // Test DB route
 app.get('/users', async (req, res) => {
@@ -46,7 +45,7 @@ app.get('/users', async (req, res) => {
 
 app.post('/add-user', async (req, res) => {
   try {
-    const newUser = new User({ name: 'John Doe' });
+    const newUser = new User({ name: 'John Doe1' });
     await newUser.save();
     res.status(201).json(newUser);
   } catch (err) {
