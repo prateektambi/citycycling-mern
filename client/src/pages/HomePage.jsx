@@ -11,7 +11,7 @@ const HomePage = () => {
    <div className="home-page">
       
       {/* 1. Full-Width Hero Image Section (Hero Section) */}
-      <header className="hero-section">
+      <section className="hero-section">
         <div className="hero-overlay">
           <h1>Explore the City on Two Wheels!</h1>
           <p>Your ultimate source for reliable, affordable cycle rentals.</p>
@@ -22,7 +22,7 @@ const HomePage = () => {
           alt="Full width image of a cyclist on a scenic road" 
           className="hero-image"
         />
-      </header>
+      </section>
 
       {/* 2. Main Content Section */}
       <main className="main-content">
