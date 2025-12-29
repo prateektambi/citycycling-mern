@@ -1,5 +1,12 @@
-
 const mongoose = require('mongoose');
+
+const ReviewSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    rating: { type: Number, required: true },
+    comment: { type: String, required: true },
+}, {
+    timestamps: true,
+});
 
 const ProductSchema = new mongoose.Schema({
     // --- Identification and Core Details ---
@@ -38,6 +45,10 @@ const ProductSchema = new mongoose.Schema({
         enum: ['S', 'M', 'L', 'XL', 'Universal',  'Kids1-3', 'Kids3-6', 'Kids6-10'],
         trim: true
     },
+    minHeightFt: { type: Number },
+    minHeightInch: { type: Number },
+    maxHeightFt: { type: Number },
+    maxHeightInch: { type: Number },
     inventoryCount: {
         type: Number,
         required: true,
@@ -59,25 +70,21 @@ const ProductSchema = new mongoose.Schema({
         required: [true, 'Monthly rental price is required'],
         min: [0.01, 'Rate must be positive']
     },
-
-    // --- Specific Details (Conditional Data) ---
-    // Use an array of strings/objects for features like sizes, colors, or specifications.
-    // Example for a Cycle: ['Size: Large', 'Frame: Aluminium']
-    // Example for a Helmet: ['Size: M', 'Color: Black']
-    // specifications: {
-    //     type: [String], 
-    //     default: []
-    // },
-
-    // // --- Visuals and Ratings ---
-    // imageUrls: {
-    //     type: [String], // Array of URLs (hosted on Render, Cloudinary, etc.)
-    //     default: []
-    // },
-    // averageRating: {
-    //     type: Number,
-    //     default: 0
-    // },
+    
+    // --- Visuals and Ratings ---
+    imageUrls: {
+        type: [String], // Array of URLs (hosted on Render, Cloudinary, etc.)
+        default: []
+    },
+    averageRating: {
+        type: Number,
+        default: 0
+    },
+    numReviews: {
+        type: Number,
+        default: 0
+    },
+    reviews: [ReviewSchema],
 
     createdAt: {
         type: Date,

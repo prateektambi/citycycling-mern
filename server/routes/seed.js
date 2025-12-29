@@ -19,12 +19,17 @@ router.post('/', async (req, res) => {
             skip_empty_lines: true,
         });
         console.log(`✅ Fetched ${records.length} records from CSV.`);
+        console.log(records);
 
         // 2. Prepare products for insertion
         const productsToInsert = records.map(row => ({
             name: row.name,
             slug: row.slug,
             size: row.size,
+            minHeightFt: row.minHeightFt ? Number(row.minHeightFt) : undefined,
+            minHeightInch: row.minHeightInch ? Number(row.minHeightInch) : undefined,
+            maxHeightFt: row.maxHeightFt ? Number(row.maxHeightFt) : undefined,
+            maxHeightInch: row.maxHeightInch ? Number(row.maxHeightInch) : undefined,
             category: row.category,
             dailyRate: Number(row.dailyRate) || 0,
             weeklyRate: Number(row.weeklyRate) || 0,

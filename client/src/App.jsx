@@ -6,6 +6,7 @@ import HowItWorks from './pages/HowItWorks';
 import LeaveRequest from './pages/LeaveRequest';
 import Contact from './pages/Contact';
 import Catalogue from './pages/Catalogue'; // Import Catalogue
+import ProductPage from './pages/ProductPage'; // Import ProductPage
 import './styles/App.css';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route path="/leave-request" element={<LeaveRequest />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/catalogue" element={<Catalogue />} /> 
+        <Route path="/product/:slug" element={<ProductPage />} />
       </Routes>
     </div>
   );

@@ -33,18 +33,45 @@ const importData = async () => {
         console.log(`✅ Fetched ${records.length} records from CSV.`);
 
         // 2. Prepare products for insertion
-        const productsToInsert = records.map(row => ({
-            name: row.name,
-            slug: row.slug,
-            size: row.size,
-            category: row.category,
-            dailyRate: Number(row.dailyRate) || 0,
-            weeklyRate: Number(row.weeklyRate) || 0,
-            monthlyRate: Number(row.monthlyRate) || 0,
-            type: row.type,
-            description: row.description,
-            inventoryCount: parseInt(row.inventoryCount) || 0,
-        }));
+        const productsToInsert = records.map((row, index) => {
+            const product = {
+                name: row.name,
+                slug: row.slug,
+                size: row.size,
+                category: row.category,
+                dailyRate: Number(row.dailyRate) || 0,
+                weeklyRate: Number(row.weeklyRate) || 0,
+                monthlyRate: Number(row.monthlyRate) || 0,
+                type: row.type,
+                description: row.description,
+                inventoryCount: parseInt(row.inventoryCount) || 0,
+                reviews: [],
+                numReviews: 0,
+                averageRating: 0
+            };
+
+            if (index < 3) {
+                product.reviews = [
+                    { name: 'John Doe', rating: 4, comment: 'Great bike!' },
+                    { name: 'Jane Doe', rating: 5, comment: 'Amazing experience!' }
+                ];
+                product.numReviews = product.reviews.length;
+                const totalRating = product.reviews.reduce((acc, item) => item.rating + acc, 0);
+                product.averageRating = totalRating / product.numReviews;
+            }
+            
+            if (index >= 3 && index < 6) {
+                product.reviews = [
+                    { name: 'Peter Pan', rating: 3, comment: 'Good bike!' },
+                    { name: 'Wendy', rating: 4, comment: 'Nice bike!' }
+                ];
+                product.numReviews = product.reviews.length;
+                const totalRating = product.reviews.reduce((acc, item) => item.rating + acc, 0);
+                product.averageRating = totalRating / product.numReviews;
+            }
+
+            return product;
+        });
 
         // 3. Clear existing data and bulk insert new data
         console.log('⏳ Clearing existing products...');
