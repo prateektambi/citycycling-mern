@@ -18,15 +18,21 @@ const ProductSchema = new mongoose.Schema({
     },
     slug: {
         type: String,
-        unique: true, // Used for creating clean URLs like /catalogue/helmet-standard-M
+        unique: true, 
         required: true 
+    },
+    productCode: { 
+        type: String, 
+        unique: true, 
+        required: true, 
+        uppercase: true,
+        trim: true 
     },
     description: {
         type: String,
         required: true
     },
 
-    // --- Categorization (The Key Change) ---
     category: {
         type: String,
         // Allows filtering between main rental items and accessories
@@ -51,9 +57,8 @@ const ProductSchema = new mongoose.Schema({
     maxHeightInch: { type: Number },
     inventoryCount: {
         type: Number,
-        required: true,
         min: [0, 'Inventory count cannot be negative'],
-        default: 1
+        default: 0
     },
     dailyRate: {
         type: Number,
