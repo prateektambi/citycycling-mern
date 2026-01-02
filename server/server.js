@@ -32,9 +32,10 @@ const User = mongoose.model('User', userSchema);
 // Routes
 const seedRoutes = require('./routes/seed');
 const productRoutes = require('./routes/products');
+const orderRoutes = require('./routes/order');
 app.use('/api/seed', seedRoutes);
 app.use('/api/products', productRoutes);
-
+app.use('/api/orders', orderRoutes);
 // Test DB route
 app.get('/users', async (req, res) => {
   try {

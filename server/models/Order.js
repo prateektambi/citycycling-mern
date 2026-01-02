@@ -1,28 +1,36 @@
 const mongoose = require('mongoose');
+
 const OrderSchema = new mongoose.Schema({
-    orderId: { type: String, unique: true }, // e.g., CC-2024-001
+    orderId: { type: String, unique: true, required: true },
     
     customer: {
         name: { type: String, required: true },
         phone: { type: String, required: true },
-        address: { type: String }, 
-        pincode: { type: String },
+        address: String,
+        pincode: String
     },
 
-    // --- Items Array with Rental Type ---
-    items: [{
-        product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-        item: { type: mongoose.Schema.Types.ObjectId, ref: 'Item' },
-        
-        // Locked-in rental type for this specific item in this order
-        rentalType: { 
-            type: String, 
-            enum: ['Daily', 'Weekly', 'Monthly'], 
+    // --- Simplified Bookings (Quantity Based) ---
+    bookings: [{
+        product: { 
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: 'Product', 
             required: true 
         },
+        quantity: { type: Number, required: true, default: 1 },
         
-        appliedRate: { type: Number, required: true }, // Price based on the rentalType
-        securityDeposit: { type: Number, required: true } // Deposit for THIS item
+        startDate: { type: Date, required: true },
+        endDate: { type: Date, required: true },
+        
+        rentalType: { type: String, enum: ['Daily', 'Weekly', 'Monthly'] },
+        appliedRate: { type: Number, required: true }, // Price per unit
+        securityDeposit: { type: Number, required: true }, // Deposit per unit
+
+        bookingStatus: { 
+            type: String, 
+            enum: ['Pending', 'Confirmed', 'Active', 'Completed', 'Cancelled'], 
+            default: 'Pending' 
+        }
     }],
 
     logistics: {
@@ -36,36 +44,42 @@ const OrderSchema = new mongoose.Schema({
         }
     },
 
+    // --- Detailed Financials (Kept from previous version) ---
     financials: {
         totalRental: { type: Number, required: true },
         totalLogistics: { type: Number, default: 0 },
         totalDeposit: { type: Number, required: true },
-        grandTotal: { type: Number, required: true }, // (Rental + Logistics)
+        grandTotal: { type: Number, required: true },
 
-        // PAYMENT HISTORY (Ledger)
         paymentHistory: [{
             amount: Number,
             date: { type: Date, default: Date.now },
-            method: { type: String, enum: ['Cash', 'UPI', 'Card'] },
+            method: { type: String, enum: ['Cash', 'UPI', 'Card', 'Bank-Transfer'] },
+            transactionId: String,
             note: String
         }],
         
-        // REFUND HISTORY (For Deposits)
         refundHistory: [{
             amount: Number,
             date: { type: Date, default: Date.now },
-            reason: String, // e.g., "Full security deposit return"
-            status: { type: String, enum: ['Pending', 'Completed'], default: 'Completed' }
-        }]
+            reason: String,
+            method: String
+        }],
+
+        paymentStatus: { 
+            type: String, 
+            enum: ['Unpaid', 'Partially-Paid', 'Fully-Paid'], 
+            default: 'Unpaid' 
+        }
     },
 
-    orderNotes: { type: String },
     orderStatus: {
         type: String,
-        enum: ['Booked', 'Active', 'Completed', 'Cancelled'],
-        default: 'Booked'
-    }
-});
+        enum: ['Pending', 'Confirmed', 'In-Progress', 'Completed', 'Cancelled'],
+        default: 'Pending'
+    },
+    
+    orderNotes: String
+}, { timestamps: true });
 
-// Create and export the model
 module.exports = mongoose.model('Order', OrderSchema);
