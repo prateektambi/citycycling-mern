@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Search, Phone, ChevronRight, Plus, Filter, Calendar } from 'lucide-react';
+import { orderService } from '../../services/orderService';
 
 const OrderList = () => {
     const navigate = useNavigate();
@@ -14,8 +15,8 @@ const OrderList = () => {
         const fetchOrders = async () => {
             try {
                 // Adjust the URL to your backend API
-                const res = await axios.get(`http://localhost:5000/api/orders?status=${statusFilter}`);
-                setOrders(res.data);
+                const res = await orderService.getAll(statusFilter);
+                setOrders(res.data || res);
                 setLoading(false);
             } catch (err) {
                 console.error("Error fetching orders:", err);
@@ -25,7 +26,7 @@ const OrderList = () => {
         fetchOrders();
     }, [statusFilter]);
 
-    const filteredOrders = orders.filter(order => 
+    const filteredOrders = (orders || []).filter(order => 
         order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.customer.phone.includes(searchTerm) ||
         order.orderId.includes(searchTerm)

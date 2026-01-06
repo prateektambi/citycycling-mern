@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { productService } from '../services/productService';
 import Rating from '../components/Rating';
 import './../styles/ProductPage.css';
 
@@ -11,12 +12,8 @@ const ProductPage = () => {
     useEffect(() => {
         const fetchProduct = async () => {
             try {
-                const response = await fetch(`/api/products/${slug}`);
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data = await response.json();
-                setProduct(data);
+                const response = await productService.getBySlug(slug);
+                setProduct(response);
             } catch (error) {
                 setError(error.message);
                 console.error("Failed to fetch product:", error);

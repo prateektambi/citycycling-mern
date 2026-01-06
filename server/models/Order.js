@@ -6,6 +6,7 @@ const OrderSchema = new mongoose.Schema({
     customer: {
         name: { type: String, required: true },
         phone: { type: String, required: true },
+        alternatePhone: { type: String }, // Add this field
         address: String,
         pincode: String
     },

@@ -5,15 +5,18 @@ const Product = require('../models/Product');
  * Checks if a product can accommodate ALL requested lines in a single order request.
  */
 const isTotalStockAvailable = async (productId, requestedBookings, session = null) => {
+    console.log(`[Availability] Checking stock for Product: ${productId}`);
     const product = await Product.findById(productId).session(session);
     if (!product) throw new Error(`Product ${productId} not found.`);
 
     const totalInventory = product.inventoryCount;
+    console.log(`[Availability] Total Inventory: ${totalInventory}`);
 
     // Find the total date range for this product across all requested lines
     const allDates = requestedBookings.flatMap(b => [new Date(b.startDate), new Date(b.endDate)]);
     const minStart = new Date(Math.min(...allDates));
     const maxEnd = new Date(Math.max(...allDates));
+    console.log(`[Availability] Date Range: ${minStart.toISOString().split('T')[0]} to ${maxEnd.toISOString().split('T')[0]}`);
 
     // Get existing bookings from DB that overlap with this entire range
     const existingOrders = await Order.find({
@@ -27,6 +30,7 @@ const isTotalStockAvailable = async (productId, requestedBookings, session = nul
             }
         }
     }).session(session);
+    console.log(`[Availability] Found ${existingOrders.length} existing overlapping orders.`);
 
     // Day-by-Day Occupancy Check
     for (let d = new Date(minStart); d <= maxEnd; d.setDate(d.getDate() + 1)) {
@@ -55,8 +59,12 @@ const isTotalStockAvailable = async (productId, requestedBookings, session = nul
             }
         });
 
-        if (dailyOccupancy > totalInventory) return false;
+        if (dailyOccupancy > totalInventory) {
+            console.warn(`[Availability] Overflow on ${currentDay.toISOString().split('T')[0]}. Demand: ${dailyOccupancy}, Limit: ${totalInventory}`);
+            return false;
+        }
     }
+    console.log(`[Availability] Stock confirmed available.`);
     return true;
 };
 

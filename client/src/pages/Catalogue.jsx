@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Rating from '../components/Rating';
 import './../styles/Catalogue.css';
+import { productService } from '../services/productService';
 
 const Catalogue = () => {
     const [products, setProducts] = useState([]);
@@ -10,12 +11,8 @@ const Catalogue = () => {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const response = await fetch('/api/products');
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data = await response.json();
-                setProducts(data);
+                const response = await productService.getAll();
+                setProducts(response);
             } catch (error) {
                 setError(error.message);
                 console.error("Failed to fetch products:", error);

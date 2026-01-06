@@ -3,13 +3,20 @@ const mongoose = require('mongoose');
 const { isTotalStockAvailable } = require('../utils/availability');
 
 exports.createOrder = async (req, res) => {
+    console.log("Starting createOrder...");
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
         const { customer, bookings, logistics, initialPayment } = req.body;
+        console.log("Request body parsed. Bookings count:", bookings?.length);
+
+        if (!bookings || !Array.isArray(bookings) || bookings.length === 0) {
+            throw new Error("Order must contain at least one booking.");
+        }
 
         // --- 1. VALIDATION: GROUP BY PRODUCT ---
+        console.log("Grouping bookings by product for validation...");
         const groupedByProduct = bookings.reduce((acc, b) => {
             acc[b.product] = acc[b.product] || [];
             acc[b.product].push(b);
@@ -17,23 +24,30 @@ exports.createOrder = async (req, res) => {
         }, {});
 
         for (const productId in groupedByProduct) {
+            console.log(`Checking availability for product: ${productId}`);
             const available = await isTotalStockAvailable(
                 productId, 
                 groupedByProduct[productId], 
                 session
             );
             if (!available) {
+                console.error(`Stock unavailable for product: ${productId}`);
                 throw new Error(`Stock unavailable for some requested dates.`);
             }
         }
 
         // --- 2. FINANCIAL CALCULATIONS ---
-        const totalRental = bookings.reduce((sum, b) => sum + (b.appliedRate * b.quantity), 0);
+        console.log("Calculating financials...");
+        const totalRental = bookings.reduce((sum, b) => {
+            const units = b.unitsCharged || 1;
+            return sum + (b.appliedRate * b.quantity * units);
+        }, 0);
         const totalDeposit = bookings.reduce((sum, b) => sum + (b.securityDeposit * b.quantity), 0);
         const totalLogistics = (logistics.delivery?.charges || 0) + (logistics.return?.charges || 0);
         const grandTotal = totalRental + totalDeposit + totalLogistics;
 
         // --- 3. PAYMENT LEDGER ---
+        console.log("Processing payment ledger...");
         const paymentHistory = [];
         let paymentStatus = 'Unpaid';
 
@@ -48,6 +62,7 @@ exports.createOrder = async (req, res) => {
 
         // --- 4. CREATE ORDER ---
         const orderId = `CC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+        console.log(`Generated Order ID: ${orderId}. Creating Order instance...`);
 
         const newOrder = new Order({
             orderId,
@@ -66,30 +81,38 @@ exports.createOrder = async (req, res) => {
         });
 
         const savedOrder = await newOrder.save({ session });
+        console.log("Order saved to database. Committing transaction...");
 
         await session.commitTransaction();
+        console.log("Transaction committed successfully.");
         res.status(201).json({ success: true, order: savedOrder });
 
     } catch (error) {
+        console.error("Error in createOrder. Aborting transaction. Error:", error.message);
         await session.abortTransaction();
         res.status(400).json({ success: false, message: error.message });
     } finally {
         session.endSession();
+        console.log("Session ended.");
     }
 };
 
 // Get all orders with optional filtering (e.g., status)
 exports.getOrders = async (req, res) => {
     try {
-        const { status, phone } = req.query;
-        let query = {};
-        if (status) query.orderStatus = status;
-        if (phone) query['customer.phone'] = phone;
+        // 1. Check if there is a 'status' in the URL (e.g., ?status=Pending)
+        const { status } = req.query;
 
+        // 2. Build a query object
+        // If status exists, filter by it. If not, get everything.
+        const query = status ? { orderStatus: status } : {};
+
+        // 3. Execute the find with the query
         const orders = await Order.find(query).sort({ createdAt: -1 });
+        
         res.status(200).json(orders);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching orders", error });
     }
 };
 

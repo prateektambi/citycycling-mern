@@ -16,6 +16,7 @@ router.post('/', async (req, res) => {
         const PRODUCT_SHEET_URL = `${BASE_URL}&gid=0`; 
         const ITEM_SHEET_URL = `${BASE_URL}&gid=978514315`; // Replace with your Items tab GID
         console.log('⏳ Fetching CSV data from Google Sheets...');
+        console.log(`Fetching Products from: ${PRODUCT_SHEET_URL}`);
         const productResponse = await axios.get(PRODUCT_SHEET_URL);
         const productRecords = parse(productResponse.data, {
             columns: true,
@@ -25,6 +26,7 @@ router.post('/', async (req, res) => {
 
         let itemRecords = [];
         if (ITEM_SHEET_URL && ITEM_SHEET_URL.startsWith('http')) {
+            console.log(`Fetching Items from: ${ITEM_SHEET_URL}`);
             const itemResponse = await axios.get(ITEM_SHEET_URL);
             itemRecords = parse(itemResponse.data, {
                 columns: true,
@@ -34,6 +36,7 @@ router.post('/', async (req, res) => {
         }
 
         // 2. Prepare products for insertion
+        console.log('Mapping product CSV rows to database schema...');
         const productsToInsert = productRecords.map(row => ({
             name: row.name,
             slug: row.slug,
@@ -62,21 +65,36 @@ router.post('/', async (req, res) => {
         console.log('✅ Existing data cleared.');
 
         console.log('⏳ Inserting new products...');
+        productsToInsert.forEach(p => console.log(`   -> Product: ${p.name} (${p.productCode}) ${p.inventoryCount}`));
         const insertedProducts = await Product.insertMany(productsToInsert);
-        console.log(`✅ Successfully imported ${insertedProducts.length} products.`);
+        // console.log(`✅ Successfully imported ${insertedProducts.length} products.`);
+        // console.log(`insertedProdcuts: ${JSON.stringify(insertedProducts)}`);
 
         // 4. Process and insert items
         if (itemRecords.length > 0) {
             console.log('⏳ Processing items...');
             const productMap = new Map();
+            console.log('Building product map for item association...');
+            insertedProducts.forEach(p => console.log(`   -> Product: ${p.name} (${p.productCode}) ${p.inventoryCount}`));
             insertedProducts.forEach(p => productMap.set(p.productCode, p));
+            console.log(`productMap: ${JSON.stringify(productMap)}`);
+
+            const productsUpdated = new Set();
 
             const itemsToInsert = [];
             let itemCounter = 1;
 
             for (const row of itemRecords) {
+                console.log(`${row.productCode}`);
                 const product = productMap.get(row.productCode);
                 if (product) {
+                    console.log(`Found product: ${product.productCode}`);
+                    // Reset inventory count if this is the first item seen for this product
+                    if (!productsUpdated.has(product.productCode)) {
+                        product.inventoryCount = 0;
+                        productsUpdated.add(product.productCode);
+                    }
+
                     itemsToInsert.push({
                         product: product._id,
                         itemNumber: String(itemCounter++).padStart(3, '0'),
@@ -91,15 +109,23 @@ router.post('/', async (req, res) => {
                         }
                     });
                     // Update inventory count for the product
-                    product.inventoryCount = (product.inventoryCount || 0) + 1;
+                    product.inventoryCount += 1;
+                    console.log(`product.inventoryCount: ${product.inventoryCount}`);
                 }
             }
 
+            console.log(`Prepared ${itemsToInsert.length} items for insertion.`);
+            itemsToInsert.forEach(i => console.log(`   -> Item: #${i.itemNumber}`));
             await Item.insertMany(itemsToInsert);
             console.log(`✅ Successfully imported ${itemsToInsert.length} items.`);
 
             // Save updated product inventory counts
-            await Promise.all(Array.from(productMap.values()).map(p => p.save()));
+            console.log('Updating product inventory counts based on items...');
+            const updatePromises = Array.from(productsUpdated).map(code => {
+                return productMap.get(code).save();
+            });
+            await Promise.all(updatePromises);
+            console.log('✅ Product inventory counts updated.');
         }
 
         res.status(200).json({
