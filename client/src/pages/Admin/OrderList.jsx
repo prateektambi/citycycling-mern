@@ -112,7 +112,6 @@ const OrderList = () => {
                                         <span className="text-[10px] font-bold text-gray-600 truncate">{order.logistics.delivery.type}-{order.logistics.return.type}</span>
                                     </div>
                                 </div>
-                                
                             </div>
 
                             {/* Card Footer: Financials & Action */}
