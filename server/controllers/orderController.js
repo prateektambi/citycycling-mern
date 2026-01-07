@@ -28,6 +28,7 @@ exports.createOrder = async (req, res) => {
             const available = await isTotalStockAvailable(
                 productId, 
                 groupedByProduct[productId], 
+                null,
                 session
             );
             if (!available) {
@@ -127,29 +128,58 @@ exports.getOrderById = async (req, res) => {
     }
 };
 
-
 exports.updateOrder = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
+    
     try {
-        const { id } = req.params;
-        const updates = req.body;
+        const { customer, bookings, logistics, financials } = req.body;
+        const orderIdStr = req.params.id; // e.g., ORD-123456
 
-        // If dates or quantities changed, re-run the availability check
-        if (updates.bookings) {
-            // ... Call a modified isTotalStockAvailable that ignores THIS orderId ...
+        // 1. Find existing order
+        const existingOrder = await Order.findOne({ orderId: orderIdStr }).session(session);
+        if (!existingOrder) throw new Error("Order not found");
+
+        // 2. Availability Check (Excluding this order)
+        const groupedByProduct = bookings.reduce((acc, b) => {
+            acc[b.product] = acc[b.product] || [];
+            acc[b.product].push(b);
+            return acc;
+        }, {});
+
+        for (const productId in groupedByProduct) {
+            const available = await isTotalStockAvailable(
+                productId, 
+                groupedByProduct[productId], 
+                existingOrder._id, // Pass the internal ID to exclude it
+                session
+            );
+            if (!available) {
+                throw new Error(`Stock unavailable for product ${productId} on requested dates.`);
+            }
         }
 
+        // 3. Perform Update
         const updatedOrder = await Order.findOneAndUpdate(
-            { orderId: id },
-            { $set: updates },
+            { orderId: orderIdStr },
+            { 
+                $set: { 
+                    customer, 
+                    bookings, 
+                    logistics, 
+                    financials,
+                    updatedAt: Date.now() 
+                } 
+            },
             { new: true, session }
         );
 
         await session.commitTransaction();
         res.json(updatedOrder);
+
     } catch (err) {
         await session.abortTransaction();
+        console.error("Update Error:", err.message);
         res.status(400).json({ message: err.message });
     } finally {
         session.endSession();
