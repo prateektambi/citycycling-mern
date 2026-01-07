@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Search, Phone, ChevronRight, Plus, Filter, Calendar } from 'lucide-react';
+import { Search, Phone, ChevronRight, Plus, Filter, Calendar, Truck } from 'lucide-react';
 import { orderService } from '../../services/orderService';
 
 const OrderList = () => {
@@ -88,13 +88,23 @@ const OrderList = () => {
                                 </div>
 
                                 <div className="space-y-3 mb-6">
+                                    {/* Date & Duration */}
                                     <div className="flex items-center gap-3 text-sm text-gray-600">
-                                        <div className="p-2 bg-gray-50 rounded-lg"><Calendar size={16}/></div>
-                                        <span>{order.bookings.length} Items Rented</span>
+                                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Calendar size={16}/></div>
+                                        <div>
+                                            <p className="font-bold text-gray-800">
+                                                {new Date(order.bookings[0]?.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} - {new Date(order.bookings[0]?.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                            </p>
+                                            <p className="text-xs text-gray-400">{order.bookings.length} Item(s)</p>
+                                        </div>
                                     </div>
+                                    {/* Logistics */}
                                     <div className="flex items-center gap-3 text-sm text-gray-600">
-                                        <div className="p-2 bg-gray-50 rounded-lg"><Phone size={16}/></div>
-                                        <span>{order.customer.phone}</span>
+                                        <div className="p-2 bg-orange-50 text-orange-600 rounded-lg"><Truck size={16}/></div>
+                                        <div>
+                                            <p className="font-bold text-gray-800">{order.logistics.delivery.type.replace('-', ' ')}</p>
+                                            <p className="text-xs text-gray-400 truncate max-w-[180px]">{order.customer.address || 'No Address Provided'}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

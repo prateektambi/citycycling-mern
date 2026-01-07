@@ -18,6 +18,7 @@ const OrderSchema = new mongoose.Schema({
             ref: 'Product', 
             required: true 
         },
+        productCode: { type: String }, 
         quantity: { type: Number, required: true, default: 1 },
         
         startDate: { type: Date, required: true },

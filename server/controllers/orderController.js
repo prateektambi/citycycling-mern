@@ -43,8 +43,8 @@ exports.createOrder = async (req, res) => {
             return sum + (b.appliedRate * b.quantity * units);
         }, 0);
         const totalDeposit = bookings.reduce((sum, b) => sum + (b.securityDeposit * b.quantity), 0);
-        const totalLogistics = (logistics.delivery?.charges || 0) + (logistics.return?.charges || 0);
-        const grandTotal = totalRental + totalDeposit + totalLogistics;
+        const totalLogistics = Number(logistics.delivery?.charges || 0) + Number(logistics.return?.charges || 0);
+        const grandTotal = Number(totalRental) + Number(totalLogistics);
 
         // --- 3. PAYMENT LEDGER ---
         console.log("Processing payment ledger...");

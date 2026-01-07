@@ -10,13 +10,13 @@ const CreateOrder = () => {
     const navigate = useNavigate();
     const [availableProducts, setAvailableProducts] = useState([]);
     const [orderData, setOrderData] = useState({
-        // orderId: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
         customer: { name: '', phone: '', alternatePhone: '', address: '', pincode: '' },
         bookings: [],
         logistics: {
             delivery: { type: 'Self-Pickup', charges: 0 },
             return: { type: 'Self-Drop', charges: 0 }
         },
+        initialPayment: { amount: 0, method: 'Cash', transactionId: '', note: '' },
         financials: {
             totalRental: 0,
             totalLogistics: 0,
@@ -71,13 +71,12 @@ const CreateOrder = () => {
             if (item.durationDays !== diffDays || item.unitsCharged !== unitsToCharge) {
                 bookingsChanged = true;
             }
-
             return { ...item, durationDays: diffDays, unitsCharged: unitsToCharge };
         });
 
         const logisticsTotal = (Number(orderData.logistics.delivery.charges) || 0) + 
                                (Number(orderData.logistics.return.charges) || 0);
-        const grandTotal = rentalTotal + logisticsTotal;
+        const grandTotal = Number(rentalTotal) + Number(logisticsTotal);
 
         const financialsChanged = 
             orderData.financials.totalRental !== rentalTotal ||
@@ -106,7 +105,7 @@ const CreateOrder = () => {
         setOrderData(prev => ({
             ...prev,
             bookings: [...prev.bookings, {
-                product: '', name: '', quantity: 1, 
+                product: '', productCode: '', name: '', quantity: 1, 
                 startDate: today, endDate: today, 
                 rentalType: 'Daily', appliedRate: 0, securityDeposit: 0,
                 unitsCharged: 0, durationDays: 0 // Initialize to 0 to prevent render errors
@@ -128,6 +127,7 @@ const CreateOrder = () => {
         newBookings[index] = {
             ...newBookings[index],
             product: product._id,
+            productCode: product.productCode,
             name: `${product.name} (${product.size})`,
             appliedRate: rate,
             securityDeposit: product.securityDeposit || 500
@@ -153,6 +153,13 @@ const CreateOrder = () => {
         setOrderData(prev => ({
             ...prev,
             customer: { ...prev.customer, [field]: value }
+        }));
+    };
+
+    const updatePaymentField = (field, value) => {
+        setOrderData(prev => ({
+            ...prev,
+            initialPayment: { ...prev.initialPayment, [field]: value }
         }));
     };
 
@@ -206,7 +213,7 @@ const CreateOrder = () => {
                     </div>
                 </div>
 
-                {/* 2. Inventory Section (Multi-Row Table) */}
+                {/* 2. Inventory Section */}
                 <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
                     <div className="p-6 border-b flex justify-between items-center bg-white">
                         <h2 className="font-bold">Inventory & Duration</h2>
@@ -214,76 +221,136 @@ const CreateOrder = () => {
                             <Plus size={16}/> Add Bike
                         </button>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-[10px] uppercase font-black text-gray-400">
-                                <tr>
-                                    <th className="p-4">Bike Details</th>
-                                    <th className="p-4">Rate Type</th>
-                                    <th className="p-4">Qty</th>
-                                    <th className="p-4">Dates</th>
-                                    <th className="p-4">Calculation</th>
-                                    <th className="p-4">Subtotal</th>
-                                    <th className="p-4 text-center">Delete</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {orderData.bookings.map((item, idx) => (
-                                    <tr key={idx} className="border-t border-gray-50 hover:bg-gray-50 transition">
-                                        <td className="p-4 min-w-[200px]">
-                                            <select className="w-full border p-2 rounded-lg text-sm bg-white" value={item.product} onChange={(e) => handleProductSelect(idx, e.target.value)}>
-                                                <option value="">-- Select Product --</option>
-                                                {availableProducts.map(p => <option key={p._id} value={p._id}>{p.name} ({p.size})</option>)}
-                                            </select>
-                                        </td>
-                                        <td className="p-4">
-                                            <select className="border p-2 rounded-lg text-sm font-bold text-blue-600 bg-blue-50" value={item.rentalType} onChange={(e) => updateBookingField(idx, 'rentalType', e.target.value)}>
-                                                <option value="Daily">Daily</option>
-                                                <option value="Weekly">Weekly</option>
-                                                <option value="Monthly">Monthly</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-4">
-                                            <input type="number" min="1" value={item.quantity} className="w-16 border p-2 rounded-lg text-sm" onChange={(e) => updateBookingField(idx, 'quantity', e.target.value)} />
-                                        </td>
-                                        <td className="p-4 min-w-[300px]">
-                                            <div className="flex items-center gap-2">
-                                                <input type="date" value={item.startDate} className="border p-2 rounded-lg text-xs" onChange={(e) => updateBookingField(idx, 'startDate', e.target.value)} />
-                                                <span className="text-gray-400">-</span>
-                                                <input type="date" value={item.endDate} className="border p-2 rounded-lg text-xs" onChange={(e) => updateBookingField(idx, 'endDate', e.target.value)} />
-                                            </div>
-                                        </td>
-                                        <td className="p-4 text-[10px] text-gray-500 italic">
-                                            {item.unitsCharged || 0} {item.rentalType}(s) <br/> 
-                                            ({item.durationDays || 0} days)
-                                        </td>
-                                        <td className="p-4 font-bold text-sm text-gray-800">
+                    
+                    <div className="p-6 space-y-4">
+                        {orderData.bookings.length === 0 && (
+                            <div className="text-center py-8 text-gray-400 text-sm">No items added yet. Click "Add Bike" to start.</div>
+                        )}
+                        {orderData.bookings.map((item, idx) => (
+                            <div key={idx} className="bg-gray-50 rounded-2xl p-4 border border-gray-100 relative group transition hover:shadow-md">
+                                <button 
+                                    onClick={() => setOrderData({...orderData, bookings: orderData.bookings.filter((_, i) => i !== idx)})} 
+                                    className="absolute top-2 right-2 p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition"
+                                    title="Remove Item"
+                                >
+                                    <Trash2 size={16}/>
+                                </button>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+                                    {/* Product */}
+                                    <div className="lg:col-span-3">
+                                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Bike Details</label>
+                                        <select className="w-full border border-gray-200 p-2.5 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-100 outline-none" value={item.product} onChange={(e) => handleProductSelect(idx, e.target.value)}>
+                                            <option value="">-- Select Product --</option>
+                                            {availableProducts.map(p => <option key={p._id} value={p._id}>{p.name} ({p.size})</option>)}
+                                        </select>
+                                    </div>
+
+                                    {/* Rate Type */}
+                                    <div className="lg:col-span-2">
+                                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Rate Type</label>
+                                        <select className="w-full border border-blue-100 p-2.5 rounded-xl text-sm font-bold text-blue-600 bg-blue-50 focus:ring-2 focus:ring-blue-100 outline-none" value={item.rentalType} onChange={(e) => updateBookingField(idx, 'rentalType', e.target.value)}>
+                                            <option value="Daily">Daily</option>
+                                            <option value="Weekly">Weekly</option>
+                                            <option value="Monthly">Monthly</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Rate Input */}
+                                    <div className="lg:col-span-2">
+                                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Rate (₹)</label>
+                                        <input type="number" min="0" value={item.appliedRate} className="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" onChange={(e) => updateBookingField(idx, 'appliedRate', e.target.value)} />
+                                    </div>
+
+                                    {/* Quantity */}
+                                    <div className="lg:col-span-1">
+                                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Qty</label>
+                                        <input type="number" min="1" value={item.quantity} className="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" onChange={(e) => updateBookingField(idx, 'quantity', e.target.value)} />
+                                    </div>
+
+                                    {/* Dates */}
+                                    <div className="lg:col-span-4">
+                                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Duration</label>
+                                        <div className="flex items-center gap-2">
+                                            <input type="date" value={item.startDate} className="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" onChange={(e) => updateBookingField(idx, 'startDate', e.target.value)} />
+                                            <span className="text-gray-300">-</span>
+                                            <input type="date" value={item.endDate} className="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" onChange={(e) => updateBookingField(idx, 'endDate', e.target.value)} />
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Footer Info Row */}
+                                    <div className="lg:col-span-12 flex flex-wrap justify-between items-center bg-white p-3 rounded-xl border border-gray-100 mt-1">
+                                        <div className="text-xs text-gray-500 flex items-center gap-2">
+                                            <span className="bg-gray-100 px-2 py-1 rounded">{item.unitsCharged || 0} {item.rentalType}(s)</span>
+                                            <span className="text-gray-300">|</span>
+                                            <span>{item.durationDays || 0} days total</span>
+                                        </div>
+                                        <div className="font-bold text-gray-800">
+                                            <span className="text-xs text-gray-400 font-normal mr-2">Subtotal:</span>
                                             ₹{((item.unitsCharged || 0) * (item.appliedRate || 0) * (item.quantity || 0)).toLocaleString()}
-                                        </td>
-                                        <td className="p-4 text-center">
-                                            <button onClick={() => setOrderData({...orderData, bookings: orderData.bookings.filter((_, i) => i !== idx)})} className="text-red-300 hover:text-red-500">
-                                                <Trash2 size={18}/>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
                 {/* 3. Logistics & Totals */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-                        <h3 className="font-bold flex items-center gap-2"><Truck size={18}/> Logistics Charges</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Delivery Charge</label>
-                                <input type="number" placeholder="0" className="border p-3 rounded-xl w-full text-sm" onChange={(e) => updateLogisticsField('delivery', 'charges', e.target.value)} />
+                    <div className="space-y-6">
+                        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+                            <h3 className="font-bold flex items-center gap-2"><Truck size={18}/> Logistics Charges</h3>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Delivery Type</label>
+                                        <select className="border p-3 rounded-xl w-full text-sm bg-white" value={orderData.logistics.delivery.type} onChange={(e) => updateLogisticsField('delivery', 'type', e.target.value)}>
+                                            <option value="Self-Pickup">Self Pickup</option>
+                                            <option value="Home-Delivery">Home Delivery</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Delivery Charge</label>
+                                        <input type="number" placeholder="0" value={orderData.logistics.delivery.charges} className="border p-3 rounded-xl w-full text-sm" onChange={(e) => updateLogisticsField('delivery', 'charges', e.target.value)} />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Return Type</label>
+                                        <select className="border p-3 rounded-xl w-full text-sm bg-white" value={orderData.logistics.return.type} onChange={(e) => updateLogisticsField('return', 'type', e.target.value)}>
+                                            <option value="Self-Drop">Self Drop</option>
+                                            <option value="Home-Collection">Home Collection</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Return Charge</label>
+                                        <input type="number" placeholder="0" value={orderData.logistics.return.charges} className="border p-3 rounded-xl w-full text-sm" onChange={(e) => updateLogisticsField('return', 'charges', e.target.value)} />
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Return Charge</label>
-                                <input type="number" placeholder="0" className="border p-3 rounded-xl w-full text-sm" onChange={(e) => updateLogisticsField('return', 'charges', e.target.value)} />
+                        </div>
+
+                        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+                            <h3 className="font-bold flex items-center gap-2"><CreditCard size={18}/> Initial Payment</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Amount Received</label>
+                                    <input type="number" placeholder="0" value={orderData.initialPayment.amount} className="border p-3 rounded-xl w-full text-sm" onChange={(e) => updatePaymentField('amount', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Payment Method</label>
+                                    <select className="border p-3 rounded-xl w-full text-sm bg-white" value={orderData.initialPayment.method} onChange={(e) => updatePaymentField('method', e.target.value)}>
+                                        <option value="Cash">Cash</option>
+                                        <option value="UPI">UPI</option>
+                                        <option value="Card">Card</option>
+                                        <option value="Bank-Transfer">Bank Transfer</option>
+                                    </select>
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Transaction ID / Note</label>
+                                    <input type="text" placeholder="Optional Transaction Ref" value={orderData.initialPayment.transactionId} className="border p-3 rounded-xl w-full text-sm" onChange={(e) => updatePaymentField('transactionId', e.target.value)} />
+                                </div>
                             </div>
                         </div>
                     </div>
