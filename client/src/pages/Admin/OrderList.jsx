@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { Search, Phone, ChevronRight, Plus, Filter, Calendar, Truck } from 'lucide-react';
+import { Search, Phone, ChevronRight, Plus, Calendar, Truck, Bike } from 'lucide-react';
 import { orderService } from '../../services/orderService';
 
 const OrderList = () => {
@@ -14,7 +13,6 @@ const OrderList = () => {
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                // Adjust the URL to your backend API
                 const res = await orderService.getAll(statusFilter);
                 setOrders(res.data || res);
                 setLoading(false);
@@ -32,134 +30,127 @@ const OrderList = () => {
         order.orderId.includes(searchTerm)
     );
 
-    if (loading) return <div className="p-10 text-center">Loading Dashboard...</div>;
+    if (loading) return <div className="p-10 text-center font-bold text-gray-400">Loading Dashboard...</div>;
 
     return (
-        <div className="bg-gray-50 min-h-screen pb-24">
-            {/* Sticky Header */}
-            <div className="sticky top-0 bg-white shadow-sm z-20">
-                <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <h1 className="text-xl font-bold text-gray-800">Rental Dashboard</h1>
-                    
-                    <div className="flex gap-2 flex-1 md:max-w-md">
-                        <div className="relative flex-1">
+        <div className="bg-gray-50 min-h-screen pb-20">
+            {/* Header & Filters */}
+            <div className="bg-white border-b sticky top-0 z-20 p-4 shadow-sm">
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-4 justify-between items-center">
+                    <h1 className="text-2xl font-black text-gray-900">Rental Orders</h1>
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <div className="relative flex-1 md:w-64">
                             <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
                             <input 
-                                type="text"
-                                placeholder="Search Name or Phone..."
-                                className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                type="text" 
+                                placeholder="Search Name/Phone/ID..." 
+                                className="w-full pl-10 pr-4 py-2 bg-gray-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition"
+                                value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <select 
-                            className="bg-gray-100 rounded-xl px-3 py-2 text-sm focus:outline-none"
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                        >
-                            <option value="">All</option>
-                            <option value="Pending">Pending</option>
-                            <option value="In-Progress">Active</option>
-                            <option value="Completed">Done</option>
-                        </select>
+                        <button onClick={() => navigate('/admin/orders/new')} className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-100">
+                            <Plus size={20} />
+                        </button>
                     </div>
-
-                    <button 
-                        onClick={() => navigate('/admin/orders/new')}
-                        className="hidden md:flex bg-blue-600 text-white px-6 py-2 rounded-xl font-bold items-center gap-2 hover:bg-blue-700 transition"
-                    >
-                        <Plus size={18} /> Create Order
-                    </button>
                 </div>
             </div>
 
-            {/* Responsive Grid List */}
-            <div className="max-w-7xl mx-auto p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filteredOrders.map(order => (
-                        <div key={order._id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition flex flex-col justify-between">
-                            <div>
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{order.orderId}</span>
-                                        <h3 className="font-bold text-gray-900 text-lg leading-tight">{order.customer.name}</h3>
-                                    </div>
-                                    <span className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase ${getStatusStyle(order.orderStatus)}`}>
-                                        {order.orderStatus}
-                                    </span>
+            <div className="max-w-7xl mx-auto p-4 md:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredOrders.map((order) => (
+                        <div key={order._id} className="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-blue-100 transition-all duration-300 overflow-hidden group">
+                            {/* Card Top: Status & ID */}
+                            <div className="p-5 flex justify-between items-start border-b border-gray-50">
+                                <div>
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Order ID</span>
+                                    <h3 className="font-mono font-bold text-gray-900">{order.orderId}</h3>
                                 </div>
-
-                                <div className="space-y-3 mb-6">
-                                    {/* Date & Duration */}
-                                    <div className="flex items-center gap-3 text-sm text-gray-600">
-                                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Calendar size={16}/></div>
-                                        <div>
-                                            <p className="font-bold text-gray-800">
-                                                {new Date(order.bookings[0]?.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} - {new Date(order.bookings[0]?.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                                            </p>
-                                            <p className="text-xs text-gray-400">{order.bookings.length} Item(s)</p>
-                                        </div>
-                                    </div>
-                                    {/* Logistics */}
-                                    <div className="flex items-center gap-3 text-sm text-gray-600">
-                                        <div className="p-2 bg-orange-50 text-orange-600 rounded-lg"><Truck size={16}/></div>
-                                        <div>
-                                            <p className="font-bold text-gray-800">{order.logistics.delivery.type.replace('-', ' ')}</p>
-                                            <p className="text-xs text-gray-400 truncate max-w-[180px]">{order.customer.address || 'No Address Provided'}</p>
-                                        </div>
-                                    </div>
-                                </div>
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter ${getStatusStyle(order.orderStatus)}`}>
+                                    {order.orderStatus}
+                                </span>
                             </div>
 
-                            <div className="pt-4 border-t border-gray-50 mt-auto">
-                                <div className="flex justify-between items-end mb-4">
-                                    <div>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase">Grand Total</p>
-                                        <p className="text-xl font-black text-gray-900">₹{order.financials.grandTotal}</p>
+                            {/* Card Body */}
+                            <div className="p-5 space-y-4">
+                                {/* Customer Info */}
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold">
+                                        {order.customer.name.charAt(0)}
                                     </div>
-                                    <div className={`text-xs font-bold ${getPaymentColor(order.financials.paymentStatus)}`}>
-                                        ● {order.financials.paymentStatus}
+                                    <div>
+                                        <p className="font-bold text-gray-900 leading-none">{order.customer.name}</p>
+                                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Phone size={12}/> {order.customer.phone}</p>
                                     </div>
                                 </div>
 
-                                <div className="flex gap-2">
-                                    <a href={`tel:${order.customer.phone}`} className="p-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200">
-                                        <Phone size={18} />
-                                    </a>
-                                    <button 
-                                        onClick={() => navigate(`/admin/orders/${order.orderId}`)}
-                                        className="flex-1 bg-gray-900 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition"
-                                    >
-                                        Manage Order <ChevronRight size={18} />
-                                    </button>
+                                {/* PRODUCTS SECTION (The Request) */}
+                                <div className="space-y-2">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                                        <Bike size={12}/> Booked Equipment
+                                    </p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {order.bookings.map((item, idx) => (
+                                            <div key={idx} className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-blue-100">
+                                                {item.quantity}x {item.productCode}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
+
+                                {/* Logistics Snippet */}
+                                <div className="grid grid-cols-2 gap-2 pt-2">
+                                    <div className="bg-gray-50 p-2 rounded-xl flex items-center gap-2">
+                                        <Calendar size={14} className="text-gray-400" />
+                                        <span className="text-[10px] font-bold text-gray-600">
+                                            {new Date(order.bookings[0]?.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}-
+                                            {new Date(order.bookings[0]?.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                        </span>
+                                    </div>
+                                    <div className="bg-gray-50 p-2 rounded-xl flex items-center gap-2">
+                                        <Truck size={14} className="text-gray-400" />
+                                        <span className="text-[10px] font-bold text-gray-600 truncate">{order.logistics.delivery.type}-{order.logistics.return.type}</span>
+                                    </div>
+                                </div>
+                                
+                            </div>
+
+                            {/* Card Footer: Financials & Action */}
+                            <div className="p-5 bg-gray-50/50 flex items-center justify-between border-t border-gray-100 mt-auto">
+                                <div>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase">Total Amount</p>
+                                    <p className="text-lg font-black text-gray-900">₹{order.financials.grandTotal.toLocaleString()}</p>
+                                </div>
+                                <button 
+                                    onClick={() => navigate(`/admin/orders/${order.orderId}`)}
+                                    className="p-3 bg-white border border-gray-200 rounded-xl text-gray-900 hover:bg-gray-900 hover:text-white transition shadow-sm"
+                                >
+                                    <ChevronRight size={20} />
+                                </button>
                             </div>
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Floating Mobile Create Button (hidden on desktop) */}
-            <button 
-                onClick={() => navigate('/admin/orders/new')}
-                className="md:hidden fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-2xl z-30 active:scale-90 transition"
-            >
-                <Plus size={28} />
-            </button>
+            {/* Empty State */}
+            {filteredOrders.length === 0 && (
+                <div className="text-center py-20">
+                    <p className="text-gray-400 font-medium italic">No orders found matching your search.</p>
+                </div>
+            )}
         </div>
     );
 };
 
-// Helper functions for styles
 const getStatusStyle = (s) => {
-    if (s === 'In-Progress') return 'bg-blue-100 text-blue-600';
-    if (s === 'Pending') return 'bg-orange-100 text-orange-600';
-    if (s === 'Completed') return 'bg-green-100 text-green-600';
-    return 'bg-gray-100 text-gray-600';
-};
-
-const getPaymentColor = (s) => {
-    if (s === 'Fully-Paid') return 'text-green-600';
-    if (s === 'Partially-Paid') return 'text-orange-500';
-    return 'text-red-500';
+    switch (s) {
+        case 'In-Progress': return 'bg-blue-100 text-blue-700';
+        case 'Pending': return 'bg-orange-100 text-orange-700';
+        case 'Confirmed': return 'bg-green-100 text-green-700';
+        case 'Cancelled': return 'bg-red-100 text-red-700';
+        default: return 'bg-gray-100 text-gray-700';
+    }
 };
 
 export default OrderList;
