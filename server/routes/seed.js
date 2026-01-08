@@ -4,6 +4,7 @@ const axios = require('axios');
 const { parse } = require('csv-parse/sync');
 const Product = require('../models/Product');
 const Item = require('../models/Item');
+const { updateProductAvailability } = require('../utils/availabilityUpdater');
 
 const router = express.Router();
 
@@ -127,6 +128,10 @@ router.post('/', async (req, res) => {
             await Promise.all(updatePromises);
             console.log('✅ Product inventory counts updated.');
         }
+
+        console.log('⏳ Initializing availability maps...');
+        await Promise.all(insertedProducts.map(p => updateProductAvailability(p._id)));
+        console.log('✅ Availability maps initialized.');
 
         res.status(200).json({
             message: 'Database seeded successfully!',
