@@ -74,10 +74,18 @@ const ProductSchema = new mongoose.Schema({
         required: [true, 'Monthly rental price is required'],
         min: [0.01, 'Rate must be positive']
     },
+    securityDeposit: {
+        type: Number,
+        default: 500
+    },
     
     // --- Visuals and Ratings ---
     imageUrls: {
         type: [String], // Array of URLs (hosted on Render, Cloudinary, etc.)
+        default: []
+    },
+    specifications: {
+        type: [String],
         default: []
     },
     averageRating: {
@@ -89,6 +97,18 @@ const ProductSchema = new mongoose.Schema({
         default: 0
     },
     reviews: [ReviewSchema],
+
+    /**
+     * A map to store daily availability counts.
+     * Key: Date string in 'YYYY-MM-DD' format.
+     * Value: Number of available units for that day.
+     * This will be pre-populated and updated to optimize availability checks.
+     */
+    availability: {
+        type: Map,
+        of: Number,
+        default: {}
+    },
 
     createdAt: {
         type: Date,

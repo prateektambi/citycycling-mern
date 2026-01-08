@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const mongoose = require('mongoose');
 const { isTotalStockAvailable } = require('../utils/availability');
+const { updateProductAvailability } = require('../utils/availabilityUpdater');
 
 exports.createOrder = async (req, res) => {
     console.log("Starting createOrder...");
@@ -86,6 +87,16 @@ exports.createOrder = async (req, res) => {
 
         await session.commitTransaction();
         console.log("Transaction committed successfully.");
+
+        // Fire-and-forget availability updates
+        const productIdsToUpdate = [...new Set(savedOrder.bookings.map(b => b.product.toString()))];
+        console.log('[createOrder] Triggering availability updates for products:', productIdsToUpdate);
+        productIdsToUpdate.forEach(productId => {
+            updateProductAvailability(productId).catch(err => {
+                console.error(`[BACKGROUND_ERROR] Failed to update availability for product ${productId} after order creation:`, err);
+            });
+        });
+
         res.status(201).json({ success: true, order: savedOrder });
 
     } catch (error) {
@@ -152,6 +163,11 @@ exports.updateOrder = async (req, res) => {
         }
         console.log(`[updateOrder] Existing order found (Internal ID: ${existingOrder._id}). Proceeding to validation.`);
 
+        // Collect all product IDs involved, before and after the update, for later recalculation.
+        const productIdsBefore = existingOrder.bookings.map(b => b.product.toString());
+        const productIdsAfter = bookings.map(b => b.product.toString());
+        const allProductIds = [...new Set([...productIdsBefore, ...productIdsAfter])];
+
         // 2. Availability Check (Excluding this order)
         const groupedByProduct = bookings.reduce((acc, b) => {
             acc[b.product] = acc[b.product] || [];
@@ -195,6 +211,15 @@ exports.updateOrder = async (req, res) => {
         console.log(`[updateOrder] Update successful. Committing transaction...`);
         await session.commitTransaction();
         console.log(`[updateOrder] Transaction committed. Sending response.`);
+
+        // Fire-and-forget availability updates
+        console.log('[updateOrder] Triggering availability updates for products:', allProductIds);
+        allProductIds.forEach(productId => {
+            updateProductAvailability(productId).catch(err => {
+                console.error(`[BACKGROUND_ERROR] Failed to update availability for product ${productId} after order update:`, err);
+            });
+        });
+
         res.json(updatedOrder);
 
     } catch (err) {
@@ -231,19 +256,43 @@ exports.addPayment = async (req, res) => {
 };
 
 exports.cancelOrder = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
     try {
         const order = await Order.findOneAndUpdate(
             { orderId: req.params.id },
             { 
                 $set: { 
                     orderStatus: 'Cancelled',
-                    'bookings.$[].bookingStatus': 'Cancelled' // Cancel all child items
+                    'bookings.$[].bookingStatus': 'Cancelled'
                 } 
             },
-            { new: true }
+            { new: true, session }
         );
+
+        if (!order) {
+            throw new Error('Order not found for cancellation.');
+        }
+
+        await session.commitTransaction();
+        console.log(`[cancelOrder] Order ${order.orderId} cancelled. Transaction committed.`);
+
+        // Fire-and-forget availability updates
+        const productIdsToUpdate = [...new Set(order.bookings.map(b => b.product.toString()))];
+        console.log('[cancelOrder] Triggering availability updates for products:', productIdsToUpdate);
+        productIdsToUpdate.forEach(productId => {
+            updateProductAvailability(productId).catch(err => {
+                console.error(`[BACKGROUND_ERROR] Failed to update availability for product ${productId} after order cancellation:`, err);
+            });
+        });
+
         res.json({ message: "Order cancelled and inventory released", order });
     } catch (err) {
+        await session.abortTransaction();
+        console.error(`[cancelOrder] Error: ${err.message}. Transaction aborted.`);
         res.status(500).json({ message: err.message });
+    } finally {
+        session.endSession();
+        console.log('[cancelOrder] Session ended.');
     }
 };
