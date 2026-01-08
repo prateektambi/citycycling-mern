@@ -19,5 +19,11 @@ export const orderService = {
     create: async (orderData) => {
         const response = await API.post('/api/orders', orderData);
         return response.data;
+    },
+
+    // Update an existing order
+    update: async (id, orderData) => {
+        const response = await API.put(`/api/orders/${id}`, orderData);
+        return response.data;
     }
 };

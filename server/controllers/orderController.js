@@ -129,6 +129,7 @@ exports.getOrderById = async (req, res) => {
 };
 
 exports.updateOrder = async (req, res) => {
+    console.log(`[updateOrder] Request received for Order ID: ${req.params.id}`);
     const session = await mongoose.startSession();
     session.startTransaction();
     
@@ -136,9 +137,20 @@ exports.updateOrder = async (req, res) => {
         const { customer, bookings, logistics, financials } = req.body;
         const orderIdStr = req.params.id; // e.g., ORD-123456
 
+        console.log(`[updateOrder] Payload Data:`, JSON.stringify({
+            customer: customer?.name,
+            bookingsCount: bookings?.length,
+            logisticsType: logistics?.delivery?.type,
+            financialsTotal: financials?.grandTotal
+        }, null, 2));
+
         // 1. Find existing order
         const existingOrder = await Order.findOne({ orderId: orderIdStr }).session(session);
-        if (!existingOrder) throw new Error("Order not found");
+        if (!existingOrder) {
+            console.warn(`[updateOrder] Order not found in DB: ${orderIdStr}`);
+            throw new Error("Order not found");
+        }
+        console.log(`[updateOrder] Existing order found (Internal ID: ${existingOrder._id}). Proceeding to validation.`);
 
         // 2. Availability Check (Excluding this order)
         const groupedByProduct = bookings.reduce((acc, b) => {
@@ -147,7 +159,10 @@ exports.updateOrder = async (req, res) => {
             return acc;
         }, {});
 
+        console.log(`[updateOrder] Validating stock availability for ${Object.keys(groupedByProduct).length} products...`);
+
         for (const productId in groupedByProduct) {
+            console.log(`[updateOrder] Checking product: ${productId}`);
             const available = await isTotalStockAvailable(
                 productId, 
                 groupedByProduct[productId], 
@@ -155,11 +170,14 @@ exports.updateOrder = async (req, res) => {
                 session
             );
             if (!available) {
+                console.error(`[updateOrder] Stock unavailable for product: ${productId}`);
                 throw new Error(`Stock unavailable for product ${productId} on requested dates.`);
             }
         }
+        console.log(`[updateOrder] Availability checks passed.`);
 
         // 3. Perform Update
+        console.log(`[updateOrder] Updating document in database...`);
         const updatedOrder = await Order.findOneAndUpdate(
             { orderId: orderIdStr },
             { 
@@ -174,15 +192,19 @@ exports.updateOrder = async (req, res) => {
             { new: true, session }
         );
 
+        console.log(`[updateOrder] Update successful. Committing transaction...`);
         await session.commitTransaction();
+        console.log(`[updateOrder] Transaction committed. Sending response.`);
         res.json(updatedOrder);
 
     } catch (err) {
+        console.error(`[updateOrder] Error encountered:`, err.message);
         await session.abortTransaction();
-        console.error("Update Error:", err.message);
+        console.log(`[updateOrder] Transaction aborted.`);
         res.status(400).json({ message: err.message });
     } finally {
         session.endSession();
+        console.log(`[updateOrder] Session ended.`);
     }
 };
 

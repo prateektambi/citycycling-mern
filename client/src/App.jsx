@@ -9,6 +9,7 @@ import Catalogue from './pages/Catalogue'; // Import Catalogue
 import ProductPage from './pages/ProductPage'; // Import ProductPage
 import OrderList from './pages/Admin/OrderList';
 import CreateOrder from './pages/Admin/CreateOrder';
+import ManageOrder from './pages/Admin/ManageOrder';
 import './styles/App.css';
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
           {/* 2. Admin Sub-routes */}
           <Route path="orders" element={<OrderList />} />
           <Route path="orders/new" element={<CreateOrder />} />
+          <Route path="orders/:id" element={<ManageOrder />} />
         </Route>
       </Routes>
     </div>
