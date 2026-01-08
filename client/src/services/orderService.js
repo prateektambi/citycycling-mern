@@ -25,5 +25,11 @@ export const orderService = {
     update: async (id, orderData) => {
         const response = await API.put(`/api/orders/${id}`, orderData);
         return response.data;
+    },
+
+    // Cancel an order
+    cancel: async (id) => {
+        const response = await API.delete(`/api/orders/${id}`);
+        return response.data;
     }
 };

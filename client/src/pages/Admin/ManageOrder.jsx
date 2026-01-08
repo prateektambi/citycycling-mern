@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
-    ChevronLeft, User, Trash2, Plus, CreditCard, Truck, Calendar, History, Wallet
+    ChevronLeft, User, Trash2, Plus, CreditCard, Truck, Calendar, History, Wallet, Ban
 } from 'lucide-react';
 import { productService } from '../../services/productService';
 import { orderService } from '../../services/orderService';
@@ -200,6 +200,17 @@ const ManageOrder = () => {
         setOrderData({ ...orderData, bookings: newBookings });
     };
 
+    const handleCancelOrder = async () => {
+        if (!window.confirm("Are you sure you want to cancel this order? Inventory will be released.")) return;
+        try {
+            await orderService.cancel(id);
+            setOrderData(prev => ({ ...prev, orderStatus: 'Cancelled' }));
+            alert("Order cancelled successfully.");
+        } catch (err) {
+            alert(err.response?.data?.message || "Error cancelling order.");
+        }
+    };
+
     const handleUpdateOrder = async () => {
         try {
             await orderService.update(id, orderData);
@@ -220,7 +231,16 @@ const ManageOrder = () => {
                     <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full transition"><ChevronLeft /></button>
                     <h1 className="text-xl font-bold ml-2">Edit Order</h1>
                 </div>
-                <div className="text-xs font-mono bg-gray-100 p-2 rounded border font-bold text-gray-600">{orderData.orderId}</div>
+                <div className="flex items-center gap-3">
+                    <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                        orderData.orderStatus === 'Cancelled' ? 'bg-red-100 text-red-600' : 
+                        orderData.orderStatus === 'Completed' ? 'bg-green-100 text-green-600' : 
+                        'bg-yellow-100 text-yellow-700'
+                    }`}>
+                        {orderData.orderStatus}
+                    </span>
+                    <div className="text-xs font-mono bg-gray-100 p-2 rounded border font-bold text-gray-600">{orderData.orderId}</div>
+                </div>
             </div>
 
             <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
@@ -428,10 +448,19 @@ const ManageOrder = () => {
             </div>
 
             {/* Bottom Sticky Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t flex justify-center z-40">
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t flex justify-center gap-4 z-40">
+                {orderData.orderStatus !== 'Cancelled' && (
+                    <button 
+                        onClick={handleCancelOrder}
+                        className="bg-red-50 text-red-600 px-6 py-4 rounded-2xl font-bold text-lg hover:bg-red-100 transition flex items-center gap-2"
+                    >
+                        <Ban size={20} /> Cancel
+                    </button>
+                )}
                 <button 
                     onClick={handleUpdateOrder} 
-                    className="w-full max-w-xl bg-gray-900 text-white py-4 rounded-2xl font-black text-lg shadow-xl hover:bg-black transition transform active:scale-95"
+                    disabled={orderData.orderStatus === 'Cancelled'}
+                    className={`flex-1 max-w-xl text-white py-4 rounded-2xl font-black text-lg shadow-xl transition transform active:scale-95 ${orderData.orderStatus === 'Cancelled' ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-black'}`}
                 >
                     Update Order Details
                 </button>
