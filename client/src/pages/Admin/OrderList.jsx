@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Phone, ChevronRight, Plus, Calendar, Truck, Bike } from 'lucide-react';
+import { Search, Phone, ChevronRight, Plus, Calendar, Truck, Bike, MessageCircle } from 'lucide-react';
 import { orderService } from '../../services/orderService';
 
 const OrderList = () => {
@@ -29,6 +29,13 @@ const OrderList = () => {
         order.customer.phone.includes(searchTerm) ||
         order.orderId.includes(searchTerm)
     );
+
+    const handleWhatsAppClick = (phone, name, orderId) => {
+        const cleanPhone = phone?.replace(/\D/g, '');
+        const message = `Hello ${name}, regarding your order #${orderId}`;
+        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+    };
 
     if (loading) return <div className="p-10 text-center font-bold text-gray-400">Loading Dashboard...</div>;
 
@@ -74,13 +81,27 @@ const OrderList = () => {
                             {/* Card Body */}
                             <div className="p-5 space-y-4">
                                 {/* Customer Info */}
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold">
-                                        {order.customer.name.charAt(0)}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold">
+                                            {order.customer.name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-gray-900 leading-none">{order.customer.name}</p>
+                                            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Phone size={12}/> {order.customer.phone}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-bold text-gray-900 leading-none">{order.customer.name}</p>
-                                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Phone size={12}/> {order.customer.phone}</p>
+                                    <div className="flex gap-2">
+                                        <a href={`tel:${order.customer.phone}`} className="p-2 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition" title="Call">
+                                            <Phone size={16} />
+                                        </a>
+                                        <button 
+                                            onClick={() => handleWhatsAppClick(order.customer.phone, order.customer.name, order.orderId)}
+                                            className="p-2 bg-green-50 text-green-600 rounded-full hover:bg-green-100 transition" 
+                                            title="WhatsApp"
+                                        >
+                                            <MessageCircle size={16} />
+                                        </button>
                                     </div>
                                 </div>
 
