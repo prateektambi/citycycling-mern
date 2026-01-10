@@ -39,16 +39,12 @@ const ItemSchema = new mongoose.Schema({
 });
 
 // Auto-increment logic
-ItemSchema.pre('save', async function (next) {
-    if (!this.isNew) return next();
-    try {
-        const lastItem = await mongoose.model('Item').findOne().sort({ itemNumber: -1 });
-        let nextNum = lastItem ? parseInt(lastItem.itemNumber) + 1 : 1;
-        this.itemNumber = nextNum.toString().padStart(3, '0');
-        next();
-    } catch (err) {
-        next(err);
-    }
+ItemSchema.pre('save', async function () {
+    if (!this.isNew) return;
+    
+    const lastItem = await mongoose.model('Item').findOne().sort({ itemNumber: -1 });
+    let nextNum = lastItem ? parseInt(lastItem.itemNumber) + 1 : 1;
+    this.itemNumber = nextNum.toString().padStart(3, '0');
 });
 
 module.exports = mongoose.model('Item', ItemSchema);

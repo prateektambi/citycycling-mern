@@ -36,70 +36,59 @@ router.post('/', async (req, res) => {
             console.log(`✅ Fetched ${itemRecords.length} item records from CSV.`);
         }
 
-        // 2. Prepare products for insertion
-        console.log('Mapping product CSV rows to database schema...');
-        const productsToInsert = productRecords.map(row => ({
-            name: row.name,
-            slug: row.slug,
-            productCode: row.productCode,
-            size: row.size,
-            minHeightFt: row.minHeightFt ? Number(row.minHeightFt) : undefined,
-            minHeightInch: row.minHeightInch ? Number(row.minHeightInch) : undefined,
-            maxHeightFt: row.maxHeightFt ? Number(row.maxHeightFt) : undefined,
-            maxHeightInch: row.maxHeightInch ? Number(row.maxHeightInch) : undefined,
-            category: row.category,
-            dailyRate: Number(row.dailyRate) || 0,
-            weeklyRate: Number(row.weeklyRate) || 0,
-            monthlyRate: Number(row.monthlyRate) || 0,
-            type: row.type,
-            description: row.description,
-            inventoryCount: parseInt(row.inventoryCount) || 0,
-            specifications: row.specifications ? row.specifications.split(',').map(s => s.trim()) : [],
-            imageUrls: row.imageUrls ? row.imageUrls.split(',').map(s => s.trim()) : [],
-            averageRating: Number(row.averageRating) || 0,
-        }));
+        // 2. Update or Insert Products
+        console.log('⏳ Updating/Inserting products...');
+        const productMap = new Map();
+        const processedProducts = [];
 
-        // 3. Clear existing data and bulk insert new data
-        console.log('⏳ Clearing existing data...');
-        await Item.deleteMany({});
-        await Product.deleteMany({});
-        console.log('✅ Existing data cleared.');
+        for (const row of productRecords) {
+            const productData = {
+                name: row.name,
+                slug: row.slug,
+                productCode: row.productCode,
+                size: row.size,
+                minHeightFt: row.minHeightFt ? Number(row.minHeightFt) : undefined,
+                minHeightInch: row.minHeightInch ? Number(row.minHeightInch) : undefined,
+                maxHeightFt: row.maxHeightFt ? Number(row.maxHeightFt) : undefined,
+                maxHeightInch: row.maxHeightInch ? Number(row.maxHeightInch) : undefined,
+                category: row.category,
+                dailyRate: Number(row.dailyRate) || 0,
+                weeklyRate: Number(row.weeklyRate) || 0,
+                monthlyRate: Number(row.monthlyRate) || 0,
+                type: row.type,
+                description: row.description,
+                inventoryCount: parseInt(row.inventoryCount) || 0,
+                specifications: row.specifications ? row.specifications.split(',').map(s => s.trim()) : [],
+                imageUrls: row.imageUrls ? row.imageUrls.split(',').map(s => s.trim()) : [],
+                averageRating: Number(row.averageRating) || 0,
+                securityDeposit: Number(row.securityDeposit) || 0,
+            };
 
-        console.log('⏳ Inserting new products...');
-        productsToInsert.forEach(p => console.log(`   -> Product: ${p.name} (${p.productCode}) ${p.inventoryCount}`));
-        const insertedProducts = await Product.insertMany(productsToInsert);
-        // console.log(`✅ Successfully imported ${insertedProducts.length} products.`);
-        // console.log(`insertedProdcuts: ${JSON.stringify(insertedProducts)}`);
+            let product = await Product.findOne({ productCode: row.productCode });
+            if (product) {
+                Object.assign(product, productData);
+                await product.save();
+                console.log(`   -> Updated Product: ${product.name}`);
+            } else {
+                product = new Product(productData);
+                await product.save();
+                console.log(`   -> Created Product: ${product.name}`);
+            }
+            productMap.set(product.productCode, product);
+            processedProducts.push(product);
+        }
 
-        // 4. Process and insert items
+        // 3. Process and insert/update items
         if (itemRecords.length > 0) {
             console.log('⏳ Processing items...');
-            const productMap = new Map();
-            console.log('Building product map for item association...');
-            insertedProducts.forEach(p => console.log(`   -> Product: ${p.name} (${p.productCode}) ${p.inventoryCount}`));
-            insertedProducts.forEach(p => productMap.set(p.productCode, p));
-            console.log(`productMap: ${JSON.stringify(productMap)}`);
-
-            const productsUpdated = new Set();
-
-            const itemsToInsert = [];
-            let itemCounter = 1;
 
             for (const row of itemRecords) {
-                console.log(`${row.productCode}`);
                 const product = productMap.get(row.productCode);
                 if (product) {
-                    console.log(`Found product: ${product.productCode}`);
-                    // Reset inventory count if this is the first item seen for this product
-                    if (!productsUpdated.has(product.productCode)) {
-                        product.inventoryCount = 0;
-                        productsUpdated.add(product.productCode);
-                    }
-
-                    itemsToInsert.push({
+                    let item = await Item.findOne({ chassisNumber: row.chassisNumber });
+                    
+                    const itemData = {
                         product: product._id,
-                        itemNumber: String(itemCounter++).padStart(3, '0'),
-                        chassisNumber: row.chassisNumber,
                         status: row.status,
                         purchaseDetails: {
                             price: Number(row.price) || 0,
@@ -108,34 +97,39 @@ router.post('/', async (req, res) => {
                             additionalInfo: row.additionalInfo,
                             expectedSellingPrice: Number(row.expectedSellingPrice) || 0
                         }
-                    });
-                    // Update inventory count for the product
-                    product.inventoryCount += 1;
-                    console.log(`product.inventoryCount: ${product.inventoryCount}`);
+                    };
+
+                    if (item) {
+                        Object.assign(item, itemData);
+                        await item.save();
+                        console.log(`   -> Updated Item: ${row.chassisNumber}`);
+                    } else {
+                        const newItem = new Item({
+                            ...itemData,
+                            chassisNumber: row.chassisNumber,
+                        });
+                        await newItem.save();
+                        console.log(`   -> Created Item: ${row.chassisNumber}`);
+                    }
                 }
             }
 
-            console.log(`Prepared ${itemsToInsert.length} items for insertion.`);
-            itemsToInsert.forEach(i => console.log(`   -> Item: #${i.itemNumber}`));
-            await Item.insertMany(itemsToInsert);
-            console.log(`✅ Successfully imported ${itemsToInsert.length} items.`);
-
-            // Save updated product inventory counts
-            console.log('Updating product inventory counts based on items...');
-            const updatePromises = Array.from(productsUpdated).map(code => {
-                return productMap.get(code).save();
-            });
-            await Promise.all(updatePromises);
-            console.log('✅ Product inventory counts updated.');
+            // Update inventory counts based on actual items in DB
+            console.log('Updating product inventory counts...');
+            for (const product of productMap.values()) {
+                const count = await Item.countDocuments({ product: product._id });
+                product.inventoryCount = count;
+                await product.save();
+            }
         }
 
         console.log('⏳ Initializing availability maps...');
-        await Promise.all(insertedProducts.map(p => updateProductAvailability(p._id)));
+        await Promise.all(processedProducts.map(p => updateProductAvailability(p._id)));
         console.log('✅ Availability maps initialized.');
 
         res.status(200).json({
-            message: 'Database seeded successfully!',
-            productCount: insertedProducts.length,
+            message: 'Database synced successfully!',
+            productCount: processedProducts.length,
             itemCount: itemRecords.length,
         });
 

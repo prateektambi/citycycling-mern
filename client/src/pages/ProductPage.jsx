@@ -174,15 +174,14 @@ const ProductPage = () => {
                         <p className="price-tag"><strong>Refundable Security Deposit:</strong> ₹{product.securityDeposit}</p>
                         <p className="price-tag" style={{border: `1px solid #e5e7eb`, padding: `8px`}}><strong><quote> Initially pay security deposit only. While returning the cycle we deduct rental from the deposit and refund the balance.</quote></strong></p>
                     </div>
-                    <h3>Description</h3> 
                     <Rating value={product.averageRating} />
                     <p className="product-page-description"><strong> {product.description}   </strong></p>
                     <div className="product-meta">
-                        <p><strong>Size:   {product.size}</strong></p>
-                        {product.minHeightFt && (
-                            <p><strong>Suitable for height:      {product.minHeightFt}' {product.minHeightInch}" - {product.maxHeightFt}' {product.maxHeightInch}" </strong></p>
-                        )}
-                        <p><strong>Type: {product.type}</strong></p>
+                        <p><strong>Type:   {product.type}  </strong></p>
+                        <p><strong>Size:   {product.size} {product.minHeightFt && (
+                            <>| Suitable for height:      {product.minHeightFt}' {product.minHeightInch}" - {product.maxHeightFt}' {product.maxHeightInch}"</>
+                        )} </strong></p>
+                        
                     </div>
                 </div>
             </div>
