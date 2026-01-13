@@ -10,7 +10,6 @@ const ItemSchema = new mongoose.Schema({
     itemNumber: { 
         type: String, 
         unique: true, 
-        required: true 
     },
     chassisNumber: {
         type: String,

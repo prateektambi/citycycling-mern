@@ -1,220 +1,77 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { 
-    ChevronLeft, User, Trash2, Plus, CreditCard, Truck, Calendar, MapPin, Phone, History, IndianRupee
-} from 'lucide-react';
-import { productService } from '../../services/productService';
-import { orderService } from '../../services/orderService';
+/* --- Filter Bar Styles --- */
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    background: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 1px solid #eee;
+    align-items: flex-end;
+}
 
-const ManageOrder = () => {
-    const { id } = useParams(); 
-    const navigate = useNavigate();
-    const [availableProducts, setAvailableProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    
-    // NEW: For adding a payment without affecting the main orderData until saved
-    const [newPayment, setNewPayment] = useState({ amount: '', method: 'Cash', note: '' });
+.filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
 
-    const [orderData, setOrderData] = useState({
-        customer: { name: '', phone: '', alternatePhone: '', address: '', pincode: '' },
-        bookings: [],
-        logistics: {
-            delivery: { type: 'Self-Pickup', charges: 0 },
-            return: { type: 'Self-Drop', charges: 0 }
-        },
-        financials: {
-            totalRental: 0,
-            totalLogistics: 0,
-            totalDeposit: 0,
-            grandTotal: 0,
-            paymentStatus: 'Unpaid',
-            paymentHistory: [] // Added this field
-        },
-        orderStatus: 'Pending'
-    });
+.filter-item label {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #555;
+}
 
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                const [products, order] = await Promise.all([
-                    productService.getAll(),
-                    orderService.getById(id)
-                ]);
-                const fetchedOrder = order.data || order;
-                const normalizedBookings = fetchedOrder.bookings.map(b => ({
-                    ...b,
-                    product: typeof b.product === 'object' ? b.product._id : b.product,
-                    startDate: b.startDate ? b.startDate.split('T')[0] : '',
-                    endDate: b.endDate ? b.endDate.split('T')[0] : ''
-                }));
-                setAvailableProducts(products || []);
-                setOrderData({ ...fetchedOrder, bookings: normalizedBookings });
-                setLoading(false);
-            } catch (err) {
-                console.error("Error loading order:", err);
-                navigate('/admin/orders');
-            }
-        };
-        loadData();
-    }, [id, navigate]);
+.filter-item select, .filter-item input {
+    padding: 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+}
 
-    // Your Existing Calculation Logic (UNTouched)
-    useEffect(() => {
-        if (!orderData) return;
-        let rentalTotal = 0;
-        let depositTotal = 0;
-        const updatedBookings = orderData.bookings.map(item => {
-            if (!item.startDate || !item.endDate || !item.product) return item;
-            const start = new Date(item.startDate);
-            const end = new Date(item.endDate);
-            const diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) || 1;
-            let unitsToCharge = 0;
-            if (item.rentalType === 'Weekly') unitsToCharge = Math.ceil(diffDays / 7);
-            else if (item.rentalType === 'Monthly') unitsToCharge = Math.ceil(diffDays / 30);
-            else unitsToCharge = diffDays;
-            const rate = Number(item.appliedRate) || 0;
-            const qty = Number(item.quantity) || 0;
-            const dep = Number(item.securityDeposit) || 0;
-            rentalTotal += (unitsToCharge * rate * qty);
-            depositTotal += (dep * qty);
-            return { ...item, durationDays: diffDays, unitsCharged: unitsToCharge };
-        });
-        const logiCharges = (Number(orderData.logistics.delivery.charges) || 0) + (Number(orderData.logistics.return.charges) || 0);
-        const newGrandTotal = rentalTotal + depositTotal + logiCharges;
-        if (newGrandTotal !== orderData.financials.grandTotal) {
-            setOrderData(prev => ({
-                ...prev,
-                financials: { ...prev.financials, totalRental: rentalTotal, totalDeposit: depositTotal, totalLogistics: logiCharges, grandTotal: newGrandTotal }
-            }));
-        }
-    }, [orderData?.bookings, orderData?.logistics]);
+.height-inputs {
+    display: flex;
+    gap: 0.5rem;
+}
 
-    // NEW: Payment Handler
-    const handleAddPayment = async () => {
-        try {
-            const res = await orderService.addPayment(id, newPayment);
-            setOrderData(res.data || res);
-            setNewPayment({ amount: '', method: 'Cash', note: '' });
-            alert("Payment recorded!");
-        } catch (err) { alert("Failed to add payment"); }
-    };
+/* Toggle Buttons for Availability */
+.toggle-group {
+    display: flex;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden;
+}
 
-    const handleUpdateOrder = async () => {
-        try {
-            await orderService.update(id, orderData);
-            alert("Order updated!");
-            navigate('/admin/orders');
-        } catch (err) { alert("Update failed"); }
-    };
+.toggle-group button {
+    padding: 0.6rem 1rem;
+    border: none;
+    background: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: 0.2s;
+}
 
-    if (loading) return <div className="p-20 text-center font-bold text-gray-400">Loading...</div>;
+.toggle-group button.active {
+    background: #007bff;
+    color: white;
+}
 
-    // Derived values for the UI
-    const totalPaid = (orderData.financials.paymentHistory || []).reduce((sum, p) => sum + p.amount, 0);
-    const balanceDue = orderData.financials.grandTotal - totalPaid;
+.toggle-group button:not(:last-child) {
+    border-right: 1px solid #ccc;
+}
 
-    return (
-        <div className=\"bg-gray-50 min-h-screen pb-32\">
-            {/* Header */}
-            <div className=\"bg-white p-4 border-b flex justify-between sticky top-0 z-30 shadow-sm\">
-                <div className=\"flex items-center\">
-                    <button onClick={() => navigate(-1)} className=\"p-2 hover:bg-gray-100 rounded-full\"><ChevronLeft /></button>
-                    <h1 className=\"text-xl font-bold ml-2\">Manage Order</h1>
-                </div>
-                <div className=\"text-xs font-mono bg-gray-100 p-2 rounded border font-bold\">{orderData.orderId}</div>
-            </div>
+.no-results {
+    text-align: center;
+    padding: 3rem;
+    color: #888;
+    grid-column: 1 / -1;
+}
 
-            <div className=\"max-w-7xl mx-auto p-4 md:p-6 space-y-6\">
-                {/* 1. CUSTOMER SECTION (SAME AS YOURS) */}
-                <div className=\"bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4\">
-                    <h2 className=\"font-bold flex items-center gap-2 text-gray-700\"><User size={18}/> Customer Details</h2>
-                    <div className=\"grid grid-cols-1 md:grid-cols-3 gap-4\">
-                        <input value={orderData.customer.name} placeholder=\"Name\" className=\"border p-3 rounded-xl text-sm\" onChange={(e) => setOrderData({...orderData, customer: {...orderData.customer, name: e.target.value}})} />
-                        <input value={orderData.customer.phone} placeholder=\"Phone\" className=\"border p-3 rounded-xl text-sm\" onChange={(e) => setOrderData({...orderData, customer: {...orderData.customer, phone: e.target.value}})} />
-                        <input value={orderData.customer.alternatePhone} placeholder=\"Alt Phone\" className=\"border p-3 rounded-xl text-sm\" onChange={(e) => setOrderData({...orderData, customer: {...orderData.customer, alternatePhone: e.target.value}})} />
-                    </div>
-                </div>
-
-                {/* 2. INVENTORY SECTION (SAME AS YOURS) */}
-                <div className=\"space-y-4\">
-                    <h2 className=\"font-bold text-gray-700 flex items-center gap-2 px-2\"><Calendar size={18}/> Booked Inventory</h2>
-                    {orderData.bookings.map((item, idx) => (
-                        <div key={idx} className=\"bg-white p-6 rounded-3xl border border-gray-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6 relative\">
-                            <div className=\"space-y-3\">
-                                <label className=\"text-[10px] font-bold text-gray-400 uppercase\">Bike</label>
-                                <div className=\"p-3 bg-gray-50 rounded-xl border text-sm font-bold\">{item.name}</div>
-                            </div>
-                            <div className=\"space-y-3\">
-                                <label className=\"text-[10px] font-bold text-gray-400 uppercase\">Dates</label>
-                                <div className=\"grid grid-cols-2 gap-2\">
-                                    <input type=\"date\" value={item.startDate} className=\"border p-3 rounded-xl text-xs\" onChange={(e) => {
-                                        const b = [...orderData.bookings]; b[idx].startDate = e.target.value; setOrderData({...orderData, bookings: b});
-                                    }} />
-                                    <input type=\"date\" value={item.endDate} className=\"border p-3 rounded-xl text-xs\" onChange={(e) => {
-                                        const b = [...orderData.bookings]; b[idx].endDate = e.target.value; setOrderData({...orderData, bookings: b});
-                                    }} />
-                                </div>
-                            </div>
-                            <div className=\"bg-gray-50 p-4 rounded-2xl flex flex-col justify-center border border-dashed border-gray-200\">
-                                <span className=\"text-[10px] font-bold text-gray-400 uppercase\">Subtotal</span>
-                                <span className=\"text-xl font-black\">₹{(Number(item.appliedRate) * Number(item.quantity) * (item.unitsCharged || 1)).toLocaleString()}</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* 3. LOGISTICS, PAYMENTS, SUMMARY (NEW 3-COLUMN LAYOUT) */}
-                <div className=\"grid grid-cols-1 lg:grid-cols-3 gap-6\">
-                    {/* Logistics */}
-                    <div className=\"bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-6\">
-                        <h3 className=\"font-bold text-gray-700\"><Truck size={18}/> Logistics</h3>
-                        <div className=\"space-y-3\">
-                            <input type=\"number\" value={orderData.logistics.delivery.charges} className=\"w-full border p-3 rounded-xl text-sm\" placeholder=\"Delivery Charges\" onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, delivery: {...orderData.logistics.delivery, charges: e.target.value}}})} />
-                            <input type=\"number\" value={orderData.logistics.return.charges} className=\"w-full border p-3 rounded-xl text-sm\" placeholder=\"Return Charges\" onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, return: {...orderData.logistics.return, charges: e.target.value}}})} />
-                        </div>
-                    </div>
-
-                    {/* NEW: Payment Ledger Section */}
-                    <div className=\"bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4\">
-                        <h3 className=\"font-bold text-gray-700\"><History size={18}/> Payment Ledger</h3>
-                        <div className=\"space-y-2 max-h-32 overflow-y-auto pr-1 text-xs\">
-                            {(orderData.financials.paymentHistory || []).map((p, i) => (
-                                <div key={i} className=\"flex justify-between p-2 bg-gray-50 rounded-lg\">
-                                    <span>{new Date(p.date).toLocaleDateString()}</span>
-                                    <span className=\"font-bold\">₹{p.amount}</span>
-                                </div>
-                            ))}
-                        </div>
-                        <div className=\"pt-2 border-t space-y-2\">
-                            <input type=\"number\" placeholder=\"Amount\" className=\"w-full border p-2 rounded-xl text-sm\" value={newPayment.amount} onChange={e => setNewPayment({...newPayment, amount: e.target.value})} />
-                            <button onClick={handleAddPayment} className=\"w-full bg-blue-600 text-white py-2 rounded-xl text-xs font-bold\">Record Payment</button>
-                        </div>
-                    </div>
-
-                    {/* Summary Card */}
-                    <div className=\"bg-blue-600 p-8 rounded-3xl text-white shadow-xl flex flex-col justify-between\">
-                        <div>
-                            <div className=\"flex justify-between items-center mb-4\"><h3 className=\"font-bold text-xl\">Balance</h3><IndianRupee /></div>
-                            <div className=\"text-sm opacity-80\">
-                                <div className=\"flex justify-between\"><span>Total</span><span>₹{orderData.financials.grandTotal}</span></div>
-                                <div className=\"flex justify-between\"><span>Paid</span><span>₹{totalPaid}</span></div>
-                            </div>
-                        </div>
-                        <div className=\"pt-4 border-t border-white/20\">
-                            <span className=\"text-4xl font-black\">₹{balanceDue}</span>
-                            <div className=\"text-[10px] mt-2 font-bold uppercase p-1 bg-white/20 rounded text-center\">
-                                {balanceDue <= 0 ? 'FULLY PAID' : 'PENDING'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className=\"fixed bottom-0 left-0 right-0 p-4 bg-white/80 border-t flex justify-center z-40\">
-                <button onClick={handleUpdateOrder} className=\"w-full max-w-xl bg-gray-900 text-white py-4 rounded-2xl font-black text-lg shadow-xl\">Save Changes</button>
-            </div>
-        </div>
-    );
-};
-
-export default ManageOrder;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
