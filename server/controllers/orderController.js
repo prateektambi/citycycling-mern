@@ -2,7 +2,10 @@ const Order = require('../models/Order');
 const mongoose = require('mongoose');
 const { isTotalStockAvailable } = require('../utils/availability');
 const { updateProductAvailability } = require('../utils/availabilityUpdater');
+const { sendWhatsAppMessage } = require('../utils/whatsappHelper');
 
+
+// === CREATE ORDER (With State Management) ===
 exports.createOrder = async (req, res) => {
     console.log("Starting createOrder...");
     const session = await mongoose.startSession();
@@ -10,22 +13,20 @@ exports.createOrder = async (req, res) => {
 
     try {
         const { customer, bookings, logistics, initialPayment } = req.body;
-        console.log("Request body parsed. Bookings count:", bookings?.length);
 
         if (!bookings || !Array.isArray(bookings) || bookings.length === 0) {
             throw new Error("Order must contain at least one booking.");
         }
 
-        // --- 1. VALIDATION: GROUP BY PRODUCT ---
-        console.log("Grouping bookings by product for validation...");
+        // VALIDATE AVAILABILITY (Check stock before blocking)
         const groupedByProduct = bookings.reduce((acc, b) => {
             acc[b.product] = acc[b.product] || [];
             acc[b.product].push(b);
             return acc;
         }, {});
 
+        console.log("Validating stock availability for new order...");
         for (const productId in groupedByProduct) {
-            console.log(`Checking availability for product: ${productId}`);
             const available = await isTotalStockAvailable(
                 productId, 
                 groupedByProduct[productId], 
@@ -34,12 +35,11 @@ exports.createOrder = async (req, res) => {
             );
             if (!available) {
                 console.error(`Stock unavailable for product: ${productId}`);
-                throw new Error(`Stock unavailable for some requested dates.`);
+                throw new Error(`Stock unavailable for product ${productId} on requested dates.`);
             }
         }
 
-        // --- 2. FINANCIAL CALCULATIONS ---
-        console.log("Calculating financials...");
+        // Financial calculations
         const totalRental = bookings.reduce((sum, b) => {
             const units = b.unitsCharged || 1;
             return sum + (b.appliedRate * b.quantity * units);
@@ -48,8 +48,7 @@ exports.createOrder = async (req, res) => {
         const totalLogistics = Number(logistics.delivery?.charges || 0) + Number(logistics.return?.charges || 0);
         const grandTotal = Number(totalRental) + Number(totalLogistics);
 
-        // --- 3. PAYMENT LEDGER ---
-        console.log("Processing payment ledger...");
+        // Payment ledger
         const paymentHistory = [];
         let paymentStatus = 'Unpaid';
 
@@ -59,12 +58,11 @@ exports.createOrder = async (req, res) => {
                 date: new Date(),
                 note: initialPayment.note || "Initial Payment"
             });
-            paymentStatus = initialPayment.amount >= grandTotal ? 'Fully-Paid' : 'Partially-Paid';
+            paymentStatus = initialPayment.amount >= grandTotal ? 'Paid' : 'Partial';
         }
 
         // --- 4. CREATE ORDER ---
         const orderId = `CC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-        console.log(`Generated Order ID: ${orderId}. Creating Order instance...`);
 
         const newOrder = new Order({
             orderId,
@@ -79,33 +77,39 @@ exports.createOrder = async (req, res) => {
                 paymentHistory,
                 paymentStatus
             },
-            orderStatus: 'Pending'
+            orderStatus: 'On-Hold', // Default state
+            inventoryBlocked: true,  // Block inventory immediately
+            inventoryBlockedAt: new Date()
         });
+
+        newOrder.addActivity('Order Created', `New order in On-Hold state - inventory blocked`, 'System');
 
         const savedOrder = await newOrder.save({ session });
-        console.log("Order saved to database. Committing transaction...");
-
+        
+        // Trigger availability update (inventory is now blocked)
+        const productIds = [...new Set(savedOrder.bookings.map(b => b.product.toString()))];
+        console.log('[createOrder] Triggering availability updates for products:', productIds);
+        
         await session.commitTransaction();
-        console.log("Transaction committed successfully.");
-
-        // Fire-and-forget availability updates
-        const productIdsToUpdate = [...new Set(savedOrder.bookings.map(b => b.product.toString()))];
-        console.log('[createOrder] Triggering availability updates for products:', productIdsToUpdate);
-        productIdsToUpdate.forEach(productId => {
+        
+        // Fire-and-forget availability updates AFTER commit
+        productIds.forEach(productId => {
             updateProductAvailability(productId).catch(err => {
-                console.error(`[BACKGROUND_ERROR] Failed to update availability for product ${productId} after order creation:`, err);
+                console.error(`[BACKGROUND_ERROR] Failed to update availability:`, err);
             });
         });
+
+        // Send WhatsApp notification
+        await sendWhatsAppMessage(savedOrder, 'order_created');
 
         res.status(201).json({ success: true, order: savedOrder });
 
     } catch (error) {
-        console.error("Error in createOrder. Aborting transaction. Error:", error.message);
+        console.error("Error in createOrder:", error.message);
         await session.abortTransaction();
         res.status(400).json({ success: false, message: error.message });
     } finally {
         session.endSession();
-        console.log("Session ended.");
     }
 };
 
@@ -294,5 +298,173 @@ exports.cancelOrder = async (req, res) => {
     } finally {
         session.endSession();
         console.log('[cancelOrder] Session ended.');
+    }
+};
+
+
+// === STATE TRANSITION HANDLER ===
+// This function manages state changes and triggers necessary side effects
+async function handleStateTransition(order, newState, performedBy = 'Admin', session = null) {
+    const oldState = order.orderStatus;
+    
+    // Prevent invalid transitions
+    if (oldState === newState) {
+        throw new Error(`Order is already in ${newState} state`);
+    }
+
+    console.log(`[StateTransition] ${oldState} → ${newState} for Order ${order.orderId}`);
+    
+    // STATE-SPECIFIC LOGIC
+    switch(newState) {
+        case 'Confirmed':
+            // Inventory already blocked from On-Hold, just update state
+            // Remove inquiry-stage tags
+            order.removeTag('Delivery-Pending', performedBy);
+            
+            // WhatsApp: Booking Confirmed
+            await sendWhatsAppMessage(order, 'booking_confirmed');
+            break;
+
+        case 'In-Progress':
+            // Ensure it's confirmed first
+            if (oldState !== 'Confirmed') {
+                throw new Error('Can only move to In-Progress from Confirmed state');
+            }
+            
+            // Remove operational tags
+            order.removeTag('Prepped', performedBy);
+            order.removeTag('Awaiting-Pickup', performedBy);
+            
+            // WhatsApp: Bike Handed Over
+            await sendWhatsAppMessage(order, 'bike_handed_over');
+            break;
+
+        case 'Returned':
+            // Physical return happened
+            if (oldState !== 'In-Progress') {
+                throw new Error('Can only mark as Returned from In-Progress state');
+            }
+            
+            // Check if overdue and auto-tag
+            const now = new Date();
+            const endDate = new Date(order.bookings[0]?.endDate);
+            if (now > endDate) {
+                order.addTag('Overdue', performedBy);
+            }
+            
+            // WhatsApp: Return Received
+            await sendWhatsAppMessage(order, 'return_received');
+            break;
+
+        case 'Cancelled':
+            // Release inventory
+            if (order.inventoryBlocked) {
+                order.inventoryBlocked = false;
+                console.log(`[StateTransition] Inventory RELEASED for cancelled Order ${order.orderId}`);
+            }
+            
+            // Auto-tag if refund needed (only if payment was made)
+            const totalPaid = order.financials.paymentHistory.reduce((sum, p) => sum + p.amount, 0);
+            if (totalPaid > 0) {
+                order.addTag('Refund-Pending', performedBy);
+            }
+            
+            // WhatsApp: Cancellation Notice
+            await sendWhatsAppMessage(order, 'order_cancelled');
+            break;
+
+        case 'Completed':
+            // Final settlement must be done
+            if (order.financials.paymentStatus !== 'Paid') {
+                throw new Error('Cannot complete order with outstanding balance');
+            }
+            
+            // Clear all tags
+            order.tags = [];
+            
+            // Release inventory (safety check)
+            order.inventoryBlocked = false;
+            
+            // WhatsApp: Order Completed
+            await sendWhatsAppMessage(order, 'order_completed');
+            break;
+
+        default:
+            break;
+    }
+
+    // Update state and log
+    order.orderStatus = newState;
+    order.addActivity('Status Changed', `${oldState} → ${newState}`, performedBy);
+    
+    return order;
+}
+
+// === CHANGE ORDER STATE ===
+exports.changeOrderState = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { newState, performedBy } = req.body;
+        const order = await Order.findOne({ orderId: req.params.id }).session(session);
+
+        if (!order) {
+            throw new Error('Order not found');
+        }
+
+        // Handle state transition
+        await handleStateTransition(order, newState, performedBy, session);
+
+        // If moving from Confirmed/In-Progress to Cancelled, release inventory
+        if (newState === 'Cancelled' && ['On-Hold', 'Confirmed', 'In-Progress'].includes(order.orderStatus)) {
+            const productIds = [...new Set(order.bookings.map(b => b.product.toString()))];
+            productIds.forEach(productId => {
+                updateProductAvailability(productId).catch(err => {
+                    console.error(`[BACKGROUND_ERROR] Failed to update availability:`, err);
+                });
+            });
+        }
+
+        await order.save({ session });
+        await session.commitTransaction();
+
+        res.json({ success: true, order });
+
+    } catch (error) {
+        console.error('Error in changeOrderState:', error.message);
+        await session.abortTransaction();
+        res.status(400).json({ success: false, message: error.message });
+    } finally {
+        session.endSession();
+    }
+};
+
+// === ADD/REMOVE TAGS ===
+exports.manageTags = async (req, res) => {
+    try {
+        const { action, tag, performedBy } = req.body; // action: 'add' or 'remove'
+        const order = await Order.findOne({ orderId: req.params.id });
+
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        if (action === 'add') {
+            order.addTag(tag, performedBy);
+            
+            // Trigger WhatsApp for specific tags
+            if (tag === 'Damage-Assessment') {
+                await sendWhatsAppMessage(order, 'damage_reported');
+            }
+        } else if (action === 'remove') {
+            order.removeTag(tag, performedBy);
+        }
+
+        await order.save();
+        res.json({ success: true, order });
+
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
     }
 };

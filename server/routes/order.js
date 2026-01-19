@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
+const { protect } = require('../middleware/authMiddleware');
+
+// Protect all routes defined after this middleware
+router.use(protect);
 
 // 1. CREATE: The "One-Shot" Create with availability check
 router.post('/', orderController.createOrder);

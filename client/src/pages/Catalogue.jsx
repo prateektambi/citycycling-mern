@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import Rating from '../components/Rating';
 import './../styles/Catalogue.css';
 import { productService } from '../services/productService';
 

@@ -1,0 +1,39 @@
+const express = require('express');
+const router = express.Router();
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const User = require('../models/User');
+
+// --- 1. LOGIN ROUTE ---
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    console.log('User found:', user);
+    console.log('Password:', password);
+    console.log('User password:', user?.password);
+    console.log('Password hash:', await bcrypt.hash(password, 10));
+
+    if (user && (await bcrypt.compare(password, user.password))) {
+      const token = jwt.sign(
+        { id: user._id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: '30d' }
+      );
+
+      res.json({
+        _id: user._id,
+        email: user.email,
+        role: user.role,
+        token: token,
+      });
+    } else {
+      res.status(401).json({ message: 'Invalid email or password' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+module.exports = router;

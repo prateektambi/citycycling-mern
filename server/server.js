@@ -23,39 +23,16 @@ connection.on('error', (err) => {
   process.exit();
 });
 
-// Basic User model for testing
-const userSchema = new mongoose.Schema({
-  name: String
-});
-const User = mongoose.model('User', userSchema);
-
 // Routes
 const seedRoutes = require('./routes/seed');
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/order');
+const authRoutes = require('./routes/authRoutes');
+
+app.use('/api/auth', authRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
-// Test DB route
-app.get('/users', async (req, res) => {
-  try {
-    const users = await User.find();
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-app.post('/add-user', async (req, res) => {
-  try {
-    const newUser = new User({ name: 'John Doe1' });
-    await newUser.save();
-    res.status(201).json(newUser);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
 
 if (process.env.NODE_ENV === 'production') {
   // Static files middleware (must come before the catch-all route)

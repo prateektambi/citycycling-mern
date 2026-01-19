@@ -6,6 +6,17 @@ const API = axios.create({
     headers: {
         'Content-Type': 'application/json'
     }
+    
+});
+
+// This "Interceptor" attaches the token automatically to every request
+API.interceptors.request.use((config) => {
+  const savedUser = localStorage.getItem('cityCyclingUser');
+  if (savedUser) {
+    const { token } = JSON.parse(savedUser);
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export default API;

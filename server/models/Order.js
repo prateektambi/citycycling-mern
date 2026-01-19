@@ -6,12 +6,11 @@ const OrderSchema = new mongoose.Schema({
     customer: {
         name: { type: String, required: true },
         phone: { type: String, required: true },
-        alternatePhone: { type: String }, // Add this field
+        alternatePhone: { type: String },
         address: String,
         pincode: String
     },
 
-    // --- Simplified Bookings (Quantity Based) ---
     bookings: [{
         product: { 
             type: mongoose.Schema.Types.ObjectId, 
@@ -25,9 +24,10 @@ const OrderSchema = new mongoose.Schema({
         endDate: { type: Date, required: true },
         
         rentalType: { type: String, enum: ['Daily', 'Weekly', 'Monthly'] },
-        appliedRate: { type: Number, required: true }, // Price per unit
-        securityDeposit: { type: Number, required: true }, // Deposit per unit
+        appliedRate: { type: Number, required: true },
+        securityDeposit: { type: Number, required: true },
 
+        // Keep for backward compatibility but not used in new flow
         bookingStatus: { 
             type: String, 
             enum: ['Pending', 'Confirmed', 'Active', 'Completed', 'Cancelled'], 
@@ -38,15 +38,18 @@ const OrderSchema = new mongoose.Schema({
     logistics: {
         delivery: {
             type: { type: String, enum: ['Self-Pickup', 'Home-Delivery'], default: 'Self-Pickup' },
-            charges: { type: Number, default: 0 }
+            charges: { type: Number, default: 0 },
+            scheduledDate: { type: Date },
+            completedDate: { type: Date }
         },
         return: {
             type: { type: String, enum: ['Self-Drop', 'Home-Collection'], default: 'Self-Drop' },
-            charges: { type: Number, default: 0 }
+            charges: { type: Number, default: 0 },
+            scheduledDate: { type: Date },
+            completedDate: { type: Date }
         }
     },
 
-    // --- Detailed Financials (Kept from previous version) ---
     financials: {
         totalRental: { type: Number, required: true },
         totalLogistics: { type: Number, default: 0 },
@@ -65,23 +68,83 @@ const OrderSchema = new mongoose.Schema({
             amount: Number,
             date: { type: Date, default: Date.now },
             reason: String,
-            method: String
+            method: String,
+            note: String
         }],
 
         paymentStatus: { 
             type: String, 
-            enum: ['Unpaid', 'Partially-Paid', 'Fully-Paid'], 
+            enum: ['Unpaid', 'Partial', 'Paid'], 
             default: 'Unpaid' 
         }
     },
 
+    // PRIMARY STATE (The 6 States)
     orderStatus: {
         type: String,
-        enum: ['Pending', 'Confirmed', 'In-Progress', 'Completed', 'Cancelled'],
-        default: 'Pending'
+        enum: ['On-Hold', 'Confirmed', 'In-Progress', 'Returned', 'Cancelled', 'Completed'],
+        default: 'On-Hold' // Changed from 'Pending'
     },
+
+    // SECONDARY TAGS (The "Issue & Operational" Layer)
+    tags: [{
+        type: String,
+        enum: [
+            // Operational Tags (Confirmed stage)
+            'Prepped',
+            'Delivery-Pending', 
+            'Awaiting-Pickup',
+            
+            // Issue Tags (In-Progress/Returned)
+            'Overdue',
+            'Damage-Assessment',
+            'Missing-Accessory',
+            
+            // Accounting Tags
+            'Refund-Pending',
+            'Pending-Settlement'
+        ]
+    }],
+
+    // Activity Log for Transparency
+    activityLog: [{
+        action: { type: String, required: true }, // e.g., "Status Changed", "Tag Added", "Payment Received"
+        details: { type: String }, // e.g., "On-Hold → Confirmed"
+        performedBy: { type: String }, // Admin name/ID
+        timestamp: { type: Date, default: Date.now }
+    }],
     
-    orderNotes: String
+    orderNotes: String,
+
+    // Inventory Block Tracking
+    inventoryBlocked: {
+        type: Boolean,
+        default: false
+    },
+    inventoryBlockedAt: { type: Date }
+
 }, { timestamps: true });
+
+// Method to add activity log entry
+OrderSchema.methods.addActivity = function(action, details, performedBy = 'System') {
+    this.activityLog.push({ action, details, performedBy });
+};
+
+// Method to add tag with logging
+OrderSchema.methods.addTag = function(tag, performedBy = 'Admin') {
+    if (!this.tags.includes(tag)) {
+        this.tags.push(tag);
+        this.addActivity('Tag Added', `Added: ${tag}`, performedBy);
+    }
+};
+
+// Method to remove tag with logging
+OrderSchema.methods.removeTag = function(tag, performedBy = 'Admin') {
+    const index = this.tags.indexOf(tag);
+    if (index > -1) {
+        this.tags.splice(index, 1);
+        this.addActivity('Tag Removed', `Removed: ${tag}`, performedBy);
+    }
+};
 
 module.exports = mongoose.model('Order', OrderSchema);
