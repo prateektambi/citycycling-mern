@@ -12,8 +12,9 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({ email });
     console.log('User found:', user);
     console.log('Password:', password);
-    console.log('User password:', user?.password);
     console.log('Password hash:', await bcrypt.hash(password, 10));
+
+    console.log('User password:', user?.password);
 
     if (user && (await bcrypt.compare(password, user.password))) {
       const token = jwt.sign(
@@ -32,6 +33,7 @@ router.post('/login', async (req, res) => {
       res.status(401).json({ message: 'Invalid email or password' });
     }
   } catch (error) {
+    console.log('Error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
