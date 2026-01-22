@@ -31,5 +31,23 @@ export const orderService = {
     cancel: async (id) => {
         const response = await API.delete(`/api/orders/${id}`);
         return response.data;
+    },
+
+    // Change Order State
+    changeState: async (id, newState, performedBy) => {
+        const response = await API.patch(`/api/orders/${id}/state`, { newState, performedBy });
+        return response.data;
+    },
+
+    // Manage Tags (Add/Remove)
+    manageTag: async (id, action, tag, performedBy) => {
+        const response = await API.patch(`/api/orders/${id}/tags`, { action, tag, performedBy });
+        return response.data;
+    },
+
+    // Get WhatsApp Link
+    getWhatsAppLink: async (id, template) => {
+        const response = await API.post(`/api/orders/${id}/whatsapp`, { template });
+        return response.data;
     }
 };

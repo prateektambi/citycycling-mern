@@ -1,10 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
-    ChevronLeft, User, Trash2, Plus, CreditCard, Truck, Calendar, History, Wallet, Ban
+    ChevronLeft, User, Trash2, Plus, CreditCard, Truck, Calendar, History, Wallet, Ban, Tag, AlertCircle, ArrowRight, MessageCircle
 } from 'lucide-react';
 import { productService } from '../../services/productService';
 import { orderService } from '../../services/orderService';
+
+const ALLOWED_TRANSITIONS = {
+    'On-Hold': ['Confirmed', 'Cancelled'],
+    'Confirmed': ['In-Progress', 'Cancelled'],
+    'In-Progress': ['Returned', 'Cancelled'],
+    'Returned': ['Completed', 'Cancelled'],
+    'Cancelled': ['On-Hold'],
+    'Completed': ['On-Hold']
+};
+
+const AVAILABLE_TAGS = [
+    'Prepped', 'Delivery-Pending', 'Awaiting-Customer-Pickup', 'Pending-Return-Pickup', // Ops
+    'Overdue', 'Damage-Assessment', 'Missing-Accessory', // Issues
+    'Refund-Pending', 'Pending-Settlement' // Finance
+];
+
+const AVAILABLE_WHATSAPP_TEMPLATES = [
+    { label: 'Booking Confirmed', value: 'booking_confirmed' },
+    { label: 'Bike Handed Over', value: 'bike_handed_over' },
+    { label: 'Return Received', value: 'return_received' },
+    { label: 'Order Completed', value: 'order_completed' },
+    { label: 'Payment Due Reminder', value: 'payment_due' },
+    { label: 'Pickup Reminder', value: 'pickup_reminder' },
+    { label: 'Delivery Coordination', value: 'delivery_coordination' },
+    { label: 'Extension Check', value: 'extension_check' }
+];
 
 const ManageOrder = () => {
     const { id } = useParams(); 
@@ -38,7 +64,8 @@ const ManageOrder = () => {
             refundHistory: [],
             paymentStatus: 'Unpaid'
         },
-        orderStatus: 'Pending'
+        orderStatus: 'On-Hold',
+        tags: []
     });
 
     useEffect(() => {
@@ -221,6 +248,41 @@ const ManageOrder = () => {
         }
     };
 
+    const handleStateChange = async (newState) => {
+        if (!window.confirm(`Change status to ${newState}?`)) return;
+        try {
+            const res = await orderService.changeState(orderData.orderId, newState, 'Admin');
+            // Update local state with the returned order to reflect side-effects
+            setOrderData(prev => ({
+                ...prev, 
+                orderStatus: res.order.orderStatus, 
+                tags: res.order.tags, 
+                inventoryBlocked: res.order.inventoryBlocked,
+                activityLog: res.order.activityLog
+            }));
+        } catch (err) {
+            alert(err.response?.data?.message || "Error changing state");
+        }
+    };
+
+    const handleTagAction = async (action, tag) => {
+        try {
+            const res = await orderService.manageTag(orderData.orderId, action, tag, 'Admin');
+            setOrderData(prev => ({...prev, tags: res.order.tags}));
+        } catch (err) {
+             alert(err.response?.data?.message || "Error managing tags");
+        }
+    };
+
+    const handleWhatsAppSend = async (template) => {
+        try {
+            const res = await orderService.getWhatsAppLink(orderData.orderId, template);
+            if (res.url) window.open(res.url, '_blank');
+        } catch (err) {
+            alert(err.response?.data?.message || "Error generating WhatsApp link");
+        }
+    };
+
     if (loading || !orderData) return <div className="p-20 text-center font-bold text-gray-400">Loading Order Details...</div>;
 
     return (
@@ -245,6 +307,115 @@ const ManageOrder = () => {
 
             <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
                 
+                {/* 0. State & Tags Management */}
+                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+                    <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                        <div>
+                            <h2 className="font-bold flex items-center gap-2 text-gray-700 text-lg">
+                                <AlertCircle size={20} className="text-blue-600"/> 
+                                Order Status: <span className="text-blue-600 uppercase">{orderData.orderStatus}</span>
+                            </h2>
+                            <p className="text-xs text-gray-400 mt-1">Manage the lifecycle of this order.</p>
+                        </div>
+                        
+                        {/* Transition Dropdown */}
+                        <div className="w-full md:w-auto">
+                            <select
+                                className="w-full md:w-48 border-2 border-blue-100 p-2.5 rounded-xl text-sm font-bold bg-blue-50 text-blue-700 cursor-pointer hover:border-blue-300 transition outline-none"
+                                onChange={(e) => {
+                                    if(e.target.value) {
+                                        handleStateChange(e.target.value);
+                                        e.target.value = ""; // Reset
+                                    }
+                                }}
+                            >
+                                <option value="">Move to...</option>
+                                {(() => {
+                                    const allowedTransitions = ALLOWED_TRANSITIONS[orderData.orderStatus] || [];
+                                    const transitions = [...allowedTransitions];
+                                    
+                                    // Always add 'On-Hold' as fallback if not already present and not current state
+                                    if (orderData.orderStatus !== 'On-Hold' && !transitions.includes('On-Hold')) {
+                                        transitions.push('On-Hold');
+                                    }
+                                    
+                                    return transitions.map(nextState => (
+                                        <option key={nextState} value={nextState}>
+                                            {nextState}
+                                        </option>
+                                    ));
+                                })()}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="h-px bg-gray-100 w-full"></div>
+
+                    {/* Tags Management */}
+                    <div className="flex flex-col md:flex-row gap-6">
+                        <div className="flex-1 space-y-3">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                                <Tag size={12}/> Active Tags
+                            </span>
+                            <div className="flex flex-wrap gap-2">
+                                {orderData.tags?.length > 0 ? orderData.tags.map((tag, idx) => (
+                                    <span key={idx} className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200 flex items-center gap-2">
+                                        {tag}
+                                        <button onClick={() => handleTagAction('remove', tag)} className="text-gray-400 hover:text-red-500"><Trash2 size={12}/></button>
+                                    </span>
+                                )) : <span className="text-xs text-gray-300 italic">No active tags.</span>}
+                            </div>
+                        </div>
+
+                        <div className="w-full md:w-64 space-y-2">
+                            <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Add Tag</span>
+                            <select 
+                                className="w-full border p-2.5 rounded-xl text-sm bg-gray-50 font-medium"
+                                onChange={(e) => {
+                                    if(e.target.value) {
+                                        handleTagAction('add', e.target.value);
+                                        e.target.value = ""; // Reset
+                                    }
+                                }}
+                            >
+                                <option value="">+ Select Tag...</option>
+                                {AVAILABLE_TAGS.filter(t => !orderData.tags?.includes(t)).map(tag => (
+                                    <option key={tag} value={tag}>{tag}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="h-px bg-gray-100 w-full"></div>
+
+                    {/* WhatsApp Communication */}
+                    <div className="flex flex-col md:flex-row gap-6 items-center">
+                        <div className="flex-1">
+                             <h4 className="font-bold flex items-center gap-2 text-gray-700 text-sm">
+                                <MessageCircle size={16} className="text-green-600"/> 
+                                Customer Communication
+                            </h4>
+                            <p className="text-xs text-gray-400 mt-1">Send pre-filled WhatsApp messages for updates.</p>
+                        </div>
+                        <div className="w-full md:w-auto flex flex-wrap gap-2">
+                            <select 
+                                className="border p-2.5 rounded-xl text-xs font-bold bg-green-50 text-green-700 border-green-200 hover:bg-green-100 transition cursor-pointer outline-none"
+                                onChange={(e) => {
+                                    if(e.target.value) {
+                                        handleWhatsAppSend(e.target.value);
+                                        e.target.value = "";
+                                    }
+                                }}
+                            >
+                                <option value="">Select Message Template...</option>
+                                {AVAILABLE_WHATSAPP_TEMPLATES.map(t => (
+                                    <option key={t.value} value={t.value}>{t.label}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 {/* 1. Customer Section */}
                 <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
                     <h2 className="font-bold flex items-center gap-2 text-gray-700"><User size={18}/> Customer Details</h2>

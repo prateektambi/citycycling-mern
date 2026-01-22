@@ -29,14 +29,14 @@ const AdminLayout = () => {
       {/* Sidebar (Mobile + Desktop) */}
       <aside className={`
         ${isMobileMenuOpen ? 'block' : 'hidden'} 
-        md:block w-full md:w-64 bg-white shadow-lg z-20
+        md:block w-full md:w-64 bg-white shadow-lg z-20 flex flex-col h-screen sticky top-0
       `}>
         <div className="p-6 hidden md:block border-b">
           <h1 className="text-2xl font-bold text-blue-600">CityCycling</h1>
           <p className="text-xs text-gray-500 uppercase tracking-wider mt-1">Management Portal</p>
         </div>
 
-        <nav className="mt-4 px-4 space-y-2">
+        <nav className="mt-4 px-4 space-y-2 flex-grow">
           {navItems.map((item) => (
             <Link
               key={item.path}
@@ -54,7 +54,7 @@ const AdminLayout = () => {
           ))}
         </nav>
 
-        <div className="absolute bottom-0 w-full p-4 border-t bg-gray-50 hidden md:block">
+        <div className="p-4 border-t bg-gray-50 hidden md:block mt-auto">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs">
               {user?.email[0].toUpperCase()}

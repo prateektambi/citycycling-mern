@@ -468,3 +468,22 @@ exports.manageTags = async (req, res) => {
         res.status(400).json({ success: false, message: error.message });
     }
 };
+
+// === GENERATE WHATSAPP LINK ===
+exports.generateWhatsApp = async (req, res) => {
+    try {
+        const { template } = req.body;
+        const order = await Order.findOne({ orderId: req.params.id }).populate('bookings.product');
+        
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+
+        const { getWhatsAppLinkForUI } = require('../utils/whatsappHelper');
+        const url = getWhatsAppLinkForUI(order, template);
+
+        if (!url) return res.status(400).json({ message: 'Invalid template or error generating link' });
+
+        res.json({ success: true, url });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};

@@ -40,7 +40,7 @@ const updateProductAvailability = async (productId, session) => {
     // 3. Find all relevant bookings for this product (non-cancelled/completed orders)
     const relevantOrders = await Order.find({
         'bookings.product': productId,
-        'orderStatus': { $in: ['Pending', 'Confirmed', 'In-Progress'] }
+        'orderStatus': { $in: ['On-Hold', 'Confirmed', 'In-Progress'] }
     }).select('bookings.product bookings.startDate bookings.endDate bookings.quantity').session(session);
 
     console.log(`[AvailabilityUpdater] Found ${relevantOrders.length} relevant orders for this product.`);

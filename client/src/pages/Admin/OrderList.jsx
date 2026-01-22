@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Phone, ChevronRight, Plus, Calendar, Truck, Bike, MessageCircle } from 'lucide-react';
+import { Search, Phone, ChevronRight, Plus, Calendar, Truck, Bike, MessageCircle, Filter, X } from 'lucide-react';
 import { orderService } from '../../services/orderService';
 
 const OrderList = () => {
@@ -8,12 +8,17 @@ const OrderList = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
+    const [selectedStates, setSelectedStates] = useState(new Set());
+    const [selectedTags, setSelectedTags] = useState(new Set());
+    const [showFilters, setShowFilters] = useState(false);
+
+    const ALL_STATES = ['On-Hold', 'Confirmed', 'In-Progress', 'Returned', 'Completed', 'Cancelled'];
+    const ALL_TAGS = ['Prepped', 'Delivery-Pending', 'Awaiting-Customer-Pickup', 'Pending-Return-Pickup', 'Overdue', 'Damage-Assessment', 'Missing-Accessory', 'Refund-Pending', 'Pending-Settlement'];
 
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const res = await orderService.getAll(statusFilter);
+                const res = await orderService.getAll();
                 setOrders(res.data || res);
                 setLoading(false);
             } catch (err) {
@@ -22,13 +27,27 @@ const OrderList = () => {
             }
         };
         fetchOrders();
-    }, [statusFilter]);
+    }, []);
 
-    const filteredOrders = (orders || []).filter(order => 
-        order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.customer.phone.includes(searchTerm) ||
-        order.orderId.includes(searchTerm)
-    );
+    const filteredOrders = (orders || []).filter(order => {
+        const matchesSearch = order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              order.customer.phone.includes(searchTerm) ||
+                              order.orderId.includes(searchTerm);
+        
+        const matchesState = selectedStates.size === 0 || selectedStates.has(order.orderStatus);
+        
+        const matchesTags = selectedTags.size === 0 || 
+                            (order.tags && order.tags.some(tag => selectedTags.has(tag)));
+
+        return matchesSearch && matchesState && matchesTags;
+    });
+
+    const toggleFilter = (set, value) => {
+        const newSet = new Set(set);
+        if (newSet.has(value)) newSet.delete(value);
+        else newSet.add(value);
+        return newSet;
+    };
 
     const handleWhatsAppClick = (phone, name, orderId) => {
         const cleanPhone = phone?.replace(/\D/g, '');
@@ -43,23 +62,87 @@ const OrderList = () => {
         <div className="bg-gray-50 min-h-screen pb-20">
             {/* Header & Filters */}
             <div className="bg-white border-b sticky top-0 z-20 p-4 shadow-sm">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-4 justify-between items-center">
-                    <h1 className="text-2xl font-black text-gray-900">Rental Orders</h1>
-                    <div className="flex gap-2 w-full md:w-auto">
-                        <div className="relative flex-1 md:w-64">
-                            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-                            <input 
-                                type="text" 
-                                placeholder="Search Name/Phone/ID..." 
-                                className="w-full pl-10 pr-4 py-2 bg-gray-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
+                <div className="max-w-7xl mx-auto flex flex-col gap-4">
+                    <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+                        <h1 className="text-2xl font-black text-gray-900">Rental Orders</h1>
+                        <div className="flex gap-2 w-full md:w-auto">
+                            <div className="relative flex-1 md:w-64">
+                                <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search Name/Phone/ID..." 
+                                    className="w-full pl-10 pr-4 py-2 bg-gray-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <button 
+                                onClick={() => setShowFilters(!showFilters)} 
+                                className={`p-2.5 rounded-xl transition border ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-gray-200 text-gray-500'}`}
+                            >
+                                <Filter size={20} />
+                            </button>
+                            <button onClick={() => navigate('/admin/orders/new')} className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-100">
+                                <Plus size={20} />
+                            </button>
                         </div>
-                        <button onClick={() => navigate('/admin/orders/new')} className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-100">
-                            <Plus size={20} />
-                        </button>
                     </div>
+
+                    {/* Filter Panel */}
+                    {showFilters && (
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-4 animate-in slide-in-from-top-2">
+                            {/* State Filters */}
+                            <div className="space-y-2">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filter by Status</span>
+                                <div className="flex flex-wrap gap-2">
+                                    {ALL_STATES.map(state => (
+                                        <label key={state} className={`cursor-pointer px-3 py-1.5 rounded-lg text-xs font-bold border transition flex items-center gap-2 ${
+                                            selectedStates.has(state) ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                                        }`}>
+                                            <input 
+                                                type="checkbox" 
+                                                className="hidden" 
+                                                checked={selectedStates.has(state)}
+                                                onChange={() => setSelectedStates(toggleFilter(selectedStates, state))}
+                                            />
+                                            {selectedStates.has(state) && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+                                            {state}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Tag Filters */}
+                            <div className="space-y-2">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filter by Tags</span>
+                                <div className="flex flex-wrap gap-2">
+                                    {ALL_TAGS.map(tag => (
+                                        <label key={tag} className={`cursor-pointer px-3 py-1.5 rounded-lg text-xs font-bold border transition flex items-center gap-2 ${
+                                            selectedTags.has(tag) ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                                        }`}>
+                                            <input 
+                                                type="checkbox" 
+                                                className="hidden" 
+                                                checked={selectedTags.has(tag)}
+                                                onChange={() => setSelectedTags(toggleFilter(selectedTags, tag))}
+                                            />
+                                            {selectedTags.has(tag) && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+                                            {tag}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {(selectedStates.size > 0 || selectedTags.size > 0) && (
+                                <button 
+                                    onClick={() => { setSelectedStates(new Set()); setSelectedTags(new Set()); }}
+                                    className="text-xs text-red-500 font-bold hover:underline flex items-center gap-1"
+                                >
+                                    <X size={12}/> Clear All Filters
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -77,6 +160,21 @@ const OrderList = () => {
                                     {order.orderStatus}
                                 </span>
                             </div>
+
+                            {/* Tags Section */}
+                            {order.tags && order.tags.length > 0 && (
+                                <div className="px-5 pt-2 flex flex-wrap gap-1">
+                                    {order.tags.map((tag, tIdx) => (
+                                        <span key={tIdx} className={`text-[9px] px-2 py-0.5 rounded border font-bold ${
+                                            tag === 'Overdue' ? 'bg-red-50 text-red-600 border-red-100' :
+                                            tag === 'Refund-Pending' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                                            'bg-gray-50 text-gray-500 border-gray-100'
+                                        }`}>
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
 
                             {/* Card Body */}
                             <div className="p-5 space-y-4">
@@ -165,9 +263,11 @@ const OrderList = () => {
 
 const getStatusStyle = (s) => {
     switch (s) {
-        case 'In-Progress': return 'bg-blue-100 text-blue-700';
-        case 'Pending': return 'bg-orange-100 text-orange-700';
-        case 'Confirmed': return 'bg-green-100 text-green-700';
+        case 'On-Hold': return 'bg-yellow-100 text-yellow-700';
+        case 'Confirmed': return 'bg-blue-100 text-blue-700';
+        case 'In-Progress': return 'bg-purple-100 text-purple-700';
+        case 'Returned': return 'bg-indigo-100 text-indigo-700';
+        case 'Completed': return 'bg-green-100 text-green-700';
         case 'Cancelled': return 'bg-red-100 text-red-700';
         default: return 'bg-gray-100 text-gray-700';
     }

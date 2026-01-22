@@ -27,6 +27,7 @@ Questions? Call us at +91-8971552453`;
         const firstBike = order.bookings[0];
         const startDate = new Date(firstBike.startDate).toLocaleDateString('en-IN');
         const endDate = new Date(firstBike.endDate).toLocaleDateString('en-IN');
+        const paymentDue = order.financials.grandTotal - order.financials.paymentHistory.reduce((s,p) => s + p.amount, 0);
         
         return `Great news ${order.customer.name}! ✅
 
@@ -40,7 +41,7 @@ ${order.logistics.delivery.type === 'Home-Delivery'
     ? `🚚 *Home Delivery* scheduled` 
     : `📍 *Self-Pickup* from our store at Mayfair Anthem, Marathahalli`}
 
-*Payment Due:* ₹${order.financials.grandTotal - order.financials.paymentHistory.reduce((s,p) => s + p.amount, 0)}
+${paymentDue > 0 ? `*Payment Due:* ₹${paymentDue}` : ''}
 
 See you soon! 🎉`;
     },
@@ -66,6 +67,7 @@ Ride safe! 🛡️`;
     return_received: (order) => {
         const hasOverdue = order.tags.includes('Overdue');
         const hasDamage = order.tags.includes('Damage-Assessment');
+        const pendingSettlement = order.financials.grandTotal - order.financials.paymentHistory.reduce((s,p) => s + p.amount, 0) + order.financials.totalDeposit;
         
         let message = `Thank you ${order.customer.name}! 🙏
 
@@ -81,9 +83,11 @@ We've received your bike(s) back.
             message += `\n\n⏰ *Late Return*\nYour return was after the scheduled date. Overdue charges may apply.`;
         }
 
-        message += `\n\n*Pending Settlement:* ₹${order.financials.grandTotal - order.financials.paymentHistory.reduce((s,p) => s + p.amount, 0) + order.financials.totalDeposit}
-
-We'll process your final settlement and refund shortly!`;
+        if (pendingSettlement > 0) {
+            message += `\n\n*Pending Settlement:* ₹${pendingSettlement}`;
+        }
+        
+        message += `\n\nWe'll process your final settlement and refund shortly!`;
 
         return message;
     },
@@ -151,6 +155,69 @@ ${order.logistics.return.type === 'Home-Collection'
     : `Return to: Mayfair Anthem, Marathahalli`}
 
 Contact: +91-8971552453`;
+    },
+
+    // --- NEW DASHBOARD TEMPLATES ---
+
+    pickup_reminder: (order) => {
+        return `Hi ${order.customer.name}! 🚲
+
+Just checking in - are you planning to pick up your bike rental today?
+
+*Order:* ${order.orderId}
+*Location:* Mayfair Anthem, Marathahalli
+*Shop Hours:* 10:00 AM - 8:00 PM
+
+Please let us know your expected arrival time so we can have everything ready!`;
+    },
+
+    delivery_coordination: (order) => {
+        return `Hi ${order.customer.name},
+
+We have your bike delivery scheduled for today! 🚚
+
+*Order:* ${order.orderId}
+*Address:* ${order.customer.address}
+
+Could you please confirm a convenient time slot for us to drop off the bike?
+
+Thanks!`;
+    },
+
+    extension_check: (order) => {
+        return `Hi ${order.customer.name},
+
+Hope you're enjoying the ride! 🚴‍♂️
+
+Your rental is ending soon (Order: ${order.orderId}). 
+
+Would you like to:
+1. *Extend* your booking? 
+2. *Return* the bike as scheduled?
+
+Let us know, and we'll help you out!`;
+    },
+
+    payment_due: (order) => {
+        const balance = order.financials.grandTotal - order.financials.paymentHistory.reduce((s,p) => s + p.amount, 0);
+        
+        if (balance <= 0) {
+            return `Hi ${order.customer.name},
+
+Thank you for your payment! Your order *${order.orderId}* is fully paid.
+
+We appreciate your business! 🙏`;
+        }
+        
+        return `Hi ${order.customer.name},
+
+Friendly reminder regarding your order *${order.orderId}*.
+
+There is a pending balance of *₹${balance}*.
+
+Please complete the payment via UPI to this number or pay at the store/delivery.
+
+Thank you!`;
     }
 };
 

@@ -93,12 +93,13 @@ const OrderSchema = new mongoose.Schema({
             // Operational Tags (Confirmed stage)
             'Prepped',
             'Delivery-Pending', 
-            'Awaiting-Pickup',
+            'Awaiting-Customer-Pickup',
             
             // Issue Tags (In-Progress/Returned)
             'Overdue',
             'Damage-Assessment',
             'Missing-Accessory',
+            'Pending-Return-Pickup',
             
             // Accounting Tags
             'Refund-Pending',

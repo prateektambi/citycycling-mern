@@ -21,7 +21,16 @@ router.put('/:id', orderController.updateOrder);
 // 5. UPDATE: Specifically add a payment to the ledger
 router.patch('/:id/payment', orderController.addPayment);
 
-// 6. DELETE: Cancel order (releases inventory via the $[ ] operator)
+// 6. UPDATE: Change Order State
+router.patch('/:id/state', orderController.changeOrderState);
+
+// 7. UPDATE: Manage Tags
+router.patch('/:id/tags', orderController.manageTags);
+
+// 8. DELETE: Cancel order (releases inventory via the $[ ] operator)
 router.delete('/:id', orderController.cancelOrder);
+
+// 9. UTILS: Generate WhatsApp Link
+router.post('/:id/whatsapp', orderController.generateWhatsApp);
 
 module.exports = router;

@@ -17,7 +17,7 @@ const isTotalStockAvailable = async (productId, requestedBookings, excludeOrderI
 
     // Build the query
     const query = {
-        orderStatus: { $in: ['Pending', 'Confirmed', 'In-Progress'] },
+        orderStatus: { $in: ['On-Hold', 'Confirmed', 'In-Progress'] },
         bookings: {
             $elemMatch: {
                 product: productId,
