@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, NavLink } from 'react-router-dom';
 import { productService } from '../services/productService';
 import Rating from '../components/Rating';
-import './../styles/ProductPage.css';
+import { 
+    ChevronLeft, 
+    ChevronRight, 
+    ShieldCheck, 
+    Bike, 
+    Ruler, 
+    Info, 
+    CalendarDays, 
+    ShoppingCart, 
+    Clock, 
+    ArrowLeft,
+    Users
+} from 'lucide-react';
 
 const ProductPage = () => {
     const { slug } = useParams();
@@ -61,86 +73,82 @@ const ProductPage = () => {
         const monthName = currentMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
         
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const startDayOfWeek = new Date(year, month, 1).getDay(); // 0 = Sun
+        const startDayOfWeek = new Date(year, month, 1).getDay();
 
         const days = [];
-        // Empty cells for start of month
         for (let i = 0; i < startDayOfWeek; i++) {
-            days.push(<div key={`empty-${i}`} style={{ height: '50px' }}></div>);
+            days.push(<div key={`empty-${i}`} className="h-10 md:h-12 text-center"></div>);
         }
 
         for (let d = 1; d <= daysInMonth; d++) {
             const date = new Date(year, month, d);
             const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-            
             const isPast = date < today;
             
-            let bgColor = '#f9fafb'; // gray-50
-            let borderColor = '#e5e7eb'; // gray-200
-            let textColor = '#9ca3af'; // gray-400
-            let stockText = null;
+            let statusClass = "bg-gray-50 text-gray-300";
+            let stockCount = 0;
 
             if (!isPast) {
-                const stockCount = availabilityMap[dateKey] !== undefined ? availabilityMap[dateKey] : 1;
-                const isOut = stockCount === 0;
-
-                if (isOut) {
-                    bgColor = '#f3f4f6'; // gray-100
-                    borderColor = '#e5e7eb'; // gray-200
-                    textColor = '#6b7280'; // gray-500
-                } else {
-                    bgColor = '#dcfce7'; // green-100
-                    borderColor = '#bbf7d0'; // green-200
-                    textColor = '#16a34a'; // green-600
-                }
-                stockText = <span style={{ fontSize: '0.65rem', fontWeight: 'bold' }}>Stock:{stockCount}</span>;
+                stockCount = availabilityMap[dateKey] !== undefined ? availabilityMap[dateKey] : 1;
+                statusClass = stockCount > 0 
+                    ? "bg-green-50 text-green-700 border-green-100 hover:bg-green-100 cursor-help" 
+                    : "bg-red-50 text-red-500 border-red-100 opacity-50";
             }
 
             days.push(
-                <div key={dateKey} style={{
-                    height: '50px',
-                    border: `1px solid ${borderColor}`,
-                    backgroundColor: bgColor,
-                    borderRadius: '6px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: textColor,
-                    fontSize: '0.8rem'
-                }}>
-                    <span style={{ fontWeight: '600' }}>{d}</span>
-                    {stockText}
+                <div key={dateKey} className={`h-10 md:h-12 border rounded-xl flex flex-col items-center justify-center transition-all ${statusClass}`}>
+                    <span className="text-xs font-black">{d}</span>
+                    {!isPast && (
+                        <span className="text-[8px] font-bold uppercase leading-none">{stockCount > 0 ? `${stockCount} Left` : 'Out'}</span>
+                    )}
                 </div>
             );
         }
 
         return (
-            <div style={{ marginLeft: isMobile ? '0' : '70px' }}>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: '15px', fontWeight: 'bold' }}>Availability Calendar</h3>
-                <div style={{ width: '100%', maxWidth: '350px', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', backgroundColor: 'white', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                        <button 
-                            onClick={prevMonth} 
-                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontWeight: 'bold' }}
-                            disabled={currentMonth.getMonth() === today.getMonth() && currentMonth.getFullYear() === today.getFullYear()}
-                        >
-                            &lt;
-                        </button>
-                        <h4 style={{ fontWeight: 'bold', color: '#374151', margin: 0 }}>{monthName}</h4>
-                        <button 
-                            onClick={nextMonth} 
-                            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e5e7eb', background: 'white', cursor: 'pointer', fontWeight: 'bold' }}
-                            disabled={currentMonth.getFullYear() > limitDate.getFullYear() || (currentMonth.getFullYear() === limitDate.getFullYear() && currentMonth.getMonth() >= limitDate.getMonth())}
-                        >&gt;</button>
+            <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 shadow-sm">
+                <div className="flex items-center gap-3 mb-8">
+                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                        <CalendarDays size={20} />
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '8px' }}>
-                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-                            <div key={day} style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: 'bold', color: '#6b7280' }}>{day}</div>
-                        ))}
+                    <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">Availability Calendar</h3>
+                </div>
+
+                <div className="flex items-center justify-between mb-8 px-2">
+                    <button 
+                        onClick={prevMonth} 
+                        className="p-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-20"
+                        disabled={currentMonth.getMonth() === today.getMonth() && currentMonth.getFullYear() === today.getFullYear()}
+                    >
+                        <ChevronLeft size={20} />
+                    </button>
+                    <h4 className="text-lg font-black text-gray-800 uppercase tracking-widest">{monthName}</h4>
+                    <button 
+                        onClick={nextMonth} 
+                        className="p-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-20"
+                        disabled={currentMonth.getFullYear() > limitDate.getFullYear() || (currentMonth.getFullYear() === limitDate.getFullYear() && currentMonth.getMonth() >= limitDate.getMonth())}
+                    >
+                        <ChevronRight size={20} />
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-7 gap-3 text-center mb-4">
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                        <div key={`${day}-${index}`} className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{day}</div>
+                    ))}
+                </div>
+                <div className="grid grid-cols-7 gap-3">
+                    {days}
+                </div>
+                    
+                <div className="mt-8 flex gap-6 px-2">
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-green-100 rounded-full border border-green-200"></div>
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Available</span>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
-                        {days}
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-red-100 rounded-full border border-red-200"></div>
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Fully Booked</span>
                     </div>
                 </div>
             </div>
@@ -148,52 +156,191 @@ const ProductPage = () => {
     };
 
     if (error) {
-        return <div className="product-page-container">Error: {error}</div>;
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center space-y-4">
+                    <div className="text-red-500 font-black text-xl uppercase">Error Loading Product</div>
+                    <p className="text-gray-500">{error}</p>
+                    <NavLink to="/catalogue" className="inline-flex items-center gap-2 text-blue-600 font-bold hover:underline">
+                        <ArrowLeft size={18} /> Back to Catalogue
+                    </NavLink>
+                </div>
+            </div>
+        );
     }
 
     if (!product) {
-        return <div className="product-page-container">Loading...</div>;
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-gray-500 font-black uppercase tracking-widest text-xs">Fetching Details...</p>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="product-page-container" style={{ width: '100%', minHeight: '100vh', padding: '90px 20px 20px 20px', display: 'flex', flexDirection: 'column', border: 'none', boxShadow: 'none', backgroundColor: '#ffffff', marginTop: '0' }}>
-            <h1 className="product-title" style={{ textAlign: 'center', marginBottom: '10px', marginTop: 0 }}>{product.name}</h1>
-            {/* Top Section: Image and Description */}
-            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '40px', marginBottom: '20px', alignItems: isMobile ? 'stretch' : 'flex-start' }}>
-                <div className="product-image-section" style={{ flex: '1' }}>
-                    {product.imageUrls && product.imageUrls.length > 0 && (
-                        <img src={getImageUrl(product.imageUrls[0])} alt={product.name} className="product-main-image" style={{ width: '100%', borderRadius: '8px' }} />
-                    )}
-                </div>
-                
-                <div className="product-description-section" style={{ flex: '1' }}>
-                    <div className="product-page-pricing" style={{ margin: '1rem 0' }}>
-                        <p className="price-tag"><strong>Daily Rate:</strong> ₹{product.dailyRate}</p>
-                        <p className="price-tag"><strong>Weekly Rate:</strong> ₹{product.weeklyRate}</p>
-                        <p className="price-tag"><strong>Monthly Rate:</strong> ₹{product.monthlyRate}</p>
-                        <p className="price-tag"><strong>Refundable Security Deposit:</strong> ₹{product.securityDeposit}</p>
-                        <p className="price-tag" style={{border: `1px solid #e5e7eb`, padding: `8px`}}><strong><quote> Initially pay security deposit only. While returning the cycle we deduct rental from the deposit and refund the balance.</quote></strong></p>
-                    </div>
-                    <Rating value={product.averageRating} />
-                    <p className="product-page-description"><strong> {product.description}   </strong></p>
-                    <div className="product-meta">
-                        <p><strong>Type:   {product.type}  </strong></p>
-                        <p><strong>Size:   {product.size} {product.minHeightFt && (
-                            <>| Suitable for height:      {product.minHeightFt}' {product.minHeightInch}" - {product.maxHeightFt}' {product.maxHeightInch}"</>
-                        )} </strong></p>
-                        
+        <div className="bg-white min-h-screen">
+            {/* Header / Breadcrumb */}
+            <div className="bg-gray-50/50 border-b">
+                <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+                    <NavLink to="/catalogue" className="group flex items-center gap-2 text-gray-500 hover:text-blue-600 font-black text-[10px] uppercase tracking-widest transition-colors">
+                        <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                        Back to Catalogue
+                    </NavLink>
+                    <div className="text-[10px] font-black text-gray-300 uppercase tracking-widest leading-none">
+                        Category: {product.type}
                     </div>
                 </div>
             </div>
 
-            {/* Bottom Section: Calendar and Ordering Placeholder */}
-            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '40px', alignItems: isMobile ? 'stretch' : 'flex-start' }}>
-                <div className="product-calendar-section" style={{ flex: '1' }}>
-                    {renderAvailabilityCalendar()}
+            <div className="max-w-7xl mx-auto px-6 py-12 md:py-20 lg:py-24">
+                <div className="flex flex-col lg:flex-row gap-16 lg:gap-24">
+                    
+                    {/* Left Column: Image Gallery Placeholder */}
+                    <div className="flex-1 space-y-8">
+                        <div className="relative aspect-square md:aspect-video lg:aspect-square bg-gray-50 rounded-[3rem] overflow-hidden border-2 border-gray-50 shadow-inner group">
+                            {product.imageUrls && product.imageUrls.length > 0 ? (
+                                <img 
+                                    src={getImageUrl(product.imageUrls[0])} 
+                                    alt={product.name} 
+                                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-200">
+                                    <Bike size={120} />
+                                </div>
+                            )}
+                            <div className="absolute top-8 right-8 bg-white/90 backdrop-blur-md px-6 py-3 rounded-2xl text-[10px] font-black text-gray-900 shadow-xl border border-white/50 uppercase tracking-[0.2em]">
+                                Premium {product.type}
+                            </div>
+                        </div>
+
+                        {/* Additional Thumbnails Placeholder */}
+                        <div className="flex gap-4">
+                             {[1,2,3].map(i => (
+                                <div key={i} className="w-20 h-20 bg-gray-50 rounded-2xl border-2 border-gray-100 hover:border-blue-200 transition-colors cursor-pointer"></div>
+                             ))}
+                        </div>
+                    </div>
+
+                    {/* Right Column: Product Details & Booking UI */}
+                    <div className="flex-1 space-y-12">
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <Rating value={product.averageRating} />
+                                <span className="text-xs text-gray-400 font-bold uppercase tracking-widest leading-none pt-1">45 Reviews</span>
+                            </div>
+                            <h1 className="text-4xl md:text-6xl font-black text-gray-900 tracking-tight leading-[1.1] uppercase">
+                                {product.name}
+                            </h1>
+                            <p className="text-xl text-gray-500 font-medium leading-relaxed max-w-xl">
+                                {product.description}
+                            </p>
+                        </div>
+
+                        {/* Pricing Grid - Refined size */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4 pt-4">
+                            <div className="bg-white rounded-3xl p-6 border-2 border-gray-50 shadow-sm group hover:border-blue-100 transition-all">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Daily Rate</p>
+                                <div className="text-2xl font-black text-gray-900">₹{product.dailyRate}<span className="text-xs text-gray-400 font-bold ml-1">/day</span></div>
+                            </div>
+                            <div className="bg-white rounded-3xl p-6 border-2 border-gray-50 shadow-sm group hover:border-emerald-100 transition-all">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Weekly Advantage</p>
+                                <div className="text-2xl font-black text-emerald-600">₹{product.weeklyRate}<span className="text-xs text-gray-400 font-bold ml-1">/week</span></div>
+                            </div>
+                        </div>
+
+                        {/* Quick Specs / Meta */}
+                        <div className="grid grid-cols-2 gap-8 py-8 border-y border-gray-100">
+                             <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-blue-600 shadow-inner">
+                                    <Ruler size={24}/>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-none">Frame Size</p>
+                                    <p className="text-md font-black text-gray-900 uppercase">Size {product.size}</p>
+                                </div>
+                             </div>
+                             <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-blue-600">
+                                    <Users size={24}/>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-none">Rider Height</p>
+                                    <p className="text-md font-black text-gray-900 uppercase">{product.minHeightFt}'{product.minHeightInch}" - {product.maxHeightFt}'{product.maxHeightInch}"</p>
+                                </div>
+                             </div>
+                        </div>
+
+                        {/* Security Deposit & Verification Note */}
+                        <div className="bg-orange-50 border-2 border-orange-100/50 rounded-[2rem] p-8 space-y-4">
+                            <div className="flex items-center gap-4 text-orange-700">
+                                <ShieldCheck size={24} className="shrink-0" />
+                                <h4 className="font-black uppercase tracking-tight text-sm">Booking & Verification Policy</h4>
+                            </div>
+                            <div className="space-y-3">
+                                <p className="text-sm text-orange-950/70 font-medium leading-relaxed">
+                                    <span className="font-black text-orange-900">Step 1:</span> Pay only the <span className="font-black text-orange-900">₹{product.securityDeposit}</span> refundable security deposit to book. Rentals are deducted later.
+                                </p>
+                                <p className="text-sm text-orange-950/70 font-medium leading-relaxed flex items-center gap-2">
+                                    <span className="font-black text-orange-900">Step 2:</span> Government ID proof is required for verification.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Booking CTA Layout Placeholder */}
+                        <div className="pt-6 space-y-6">
+                            <div className="flex items-center gap-2 text-[10px] text-gray-400 font-black uppercase tracking-widest justify-center sm:justify-start">
+                                <Clock size={12}/> Secure booking processing
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="product-ordering-section" style={{ flex: '1' }}>
-                    {/* Future Ordering Section */}
+                {/* Bottom Section: Availability & Extra Info */}
+                <div className="mt-24 md:mt-32 pt-24 border-t gap-16 md:gap-24 flex flex-col xl:flex-row">
+                    <div className="flex-1 max-w-2xl">
+                        <div className="space-y-12">
+                            <div>
+                                <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tight mb-6">Height Specification</h2>
+                                <p className="text-gray-500 font-medium leading-relaxed mb-6">
+                                    Selecting the right frame size is crucial for your performance and comfort. This bike is optimized for:
+                                </p>
+                                <div className="bg-blue-50/50 rounded-3xl p-6 border border-blue-100 flex items-center gap-6">
+                                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-blue-50">
+                                        <Ruler size={32}/>
+                                    </div>
+                                    <div className="text-blue-900">
+                                        <p className="text-2xl font-black tracking-tight leading-none mb-1">
+                                            {product.minHeightFt}'{product.minHeightInch}" - {product.maxHeightFt}'{product.maxHeightInch}"
+                                        </p>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Recommended Rider Height</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tight mb-6">Performance Details</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <h5 className="font-black text-gray-900 uppercase text-xs mb-2">Bike Category</h5>
+                                        <p className="text-gray-500 text-sm font-medium">{product.type}</p>
+                                    </div>
+                                    <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <h5 className="font-black text-gray-900 uppercase text-xs mb-2">Primary Usage</h5>
+                                        <p className="text-gray-500 text-sm font-medium">Urban Commute & Light Trails</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Integrated Calendar Section */}
+                    <div className="xl:w-[450px]">
+                        {renderAvailabilityCalendar()}
+                    </div>
                 </div>
             </div>
         </div>
