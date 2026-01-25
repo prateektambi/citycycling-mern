@@ -18,8 +18,8 @@ const ItemSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Available', 'InPickup', 'Rented', 'Maintenance', 'Retired'],
-        default: 'Available'
+        enum: ['available', 'maintenance', 'retired'],
+        default: 'available'
     },
 
     // --- Combined Purchase Info ---
@@ -30,6 +30,16 @@ const ItemSchema = new mongoose.Schema({
         additionalInfo: { type: String }, // For bill numbers, warranty, etc.
         expectedSellingPrice: { type: Number, default: 0 }
     },
+
+    // --- Maintenance History ---
+    maintenanceHistory: [{
+        startDate: { type: Date, required: true },
+        endDate: { type: Date }, // Optional (if ongoing)
+        description: { type: String, required: true },
+        cost: { type: Number, default: 0 },
+        addedAt: { type: Date, default: Date.now },
+        addedBy: { type: String, default: 'Admin' }
+    }],
 
     createdAt: {
         type: Date,

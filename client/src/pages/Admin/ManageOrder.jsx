@@ -288,7 +288,7 @@ const ManageOrder = () => {
     return (
         <div className="bg-gray-50 min-h-screen pb-32">
             {/* Header */}
-            <div className="bg-white p-4 border-b flex justify-between sticky top-0 z-30 shadow-sm">
+            <div className="bg-white p-4 border-b flex justify-between sticky top-0 z-10 shadow-sm">
                 <div className="flex items-center">
                     <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full transition"><ChevronLeft /></button>
                     <h1 className="text-xl font-bold ml-2">Edit Order</h1>
@@ -619,7 +619,7 @@ const ManageOrder = () => {
             </div>
 
             {/* Bottom Sticky Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t flex justify-center gap-4 z-40">
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t flex justify-center gap-4 z-10">
                 {orderData.orderStatus !== 'Cancelled' && (
                     <button 
                         onClick={handleCancelOrder}

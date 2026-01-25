@@ -28,11 +28,13 @@ const seedRoutes = require('./routes/seed');
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/order');
 const authRoutes = require('./routes/authRoutes');
+const itemRoutes = require('./routes/itemRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/items', itemRoutes);
 
 if (process.env.NODE_ENV === 'production') {
   // Static files middleware (must come before the catch-all route)

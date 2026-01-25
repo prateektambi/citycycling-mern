@@ -10,6 +10,8 @@ import ProductPage from './pages/ProductPage';
 import OrderList from './pages/Admin/OrderList';
 import CreateOrder from './pages/Admin/CreateOrder';
 import ManageOrder from './pages/Admin/ManageOrder';
+import ItemList from './pages/Admin/ItemList';
+import ManageItem from './pages/Admin/ManageItem';
 import Login from './pages/Login';
 import AdminProtectedRoute from './components/AdminProtectedRoutes';
 import AdminLayout from './components/AdminLayout';
@@ -46,6 +48,10 @@ function App() {
           <Route path="orders" element={<OrderList />} />
           <Route path="orders/new" element={<CreateOrder />} />
           <Route path="orders/:id" element={<ManageOrder />} />
+          
+          {/* Item Routes */}
+          <Route path="items" element={<ItemList />} />
+          <Route path="items/:id" element={<ManageItem />} />
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" />} />
         </Route>
