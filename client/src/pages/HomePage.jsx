@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Bike, Clock, MapPin, ArrowRight, Phone, MessageCircle, Star, Users, CheckCircle2 } from 'lucide-react';
+import { Bike, Clock, MapPin, ArrowRight, Phone, MessageCircle, Star, CheckCircle2 } from 'lucide-react';
 
 const HomePage = () => {
     useEffect(() => {
@@ -30,8 +30,6 @@ const HomePage = () => {
     ];
 
     const stats = [
-        { label: "Happy Riders", value: "5000+", icon: <Users size={20}/> },
-        { label: "Cycles in Fleet", value: "200+", icon: <Bike size={20}/> },
         { label: "Google Rating", value: "4.9/5", icon: <Star size={20}/> },
     ];
 
@@ -72,23 +70,6 @@ const HomePage = () => {
                 </div>
             </div>
 
-            {/* Trust Stats Row */}
-            <div className="bg-gray-50 border-b border-gray-100">
-                <div className="max-w-7xl mx-auto px-6 py-12 md:py-16">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center items-center">
-                        {stats.map((stat, i) => (
-                            <div key={i} className="space-y-2 group">
-                                <div className="flex items-center justify-center gap-2 text-blue-600 mb-1">
-                                    {stat.icon}
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-blue-500 transition-colors">{stat.label}</span>
-                                </div>
-                                <div className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight">{stat.value}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
             {/* High-Concept Features Section */}
             <div className="max-w-7xl mx-auto px-6 py-24 md:py-32">
                 <div className="flex flex-col lg:flex-row items-end justify-between mb-20 gap-8">
@@ -116,6 +97,23 @@ const HomePage = () => {
                             </p>
                         </div>
                     ))}
+                </div>
+            </div>
+
+            {/* Trust Stats Row */}
+            <div className="bg-gray-50 border-y border-gray-100">
+                <div className="max-w-7xl mx-auto px-6 py-12 md:py-16">
+                    <div className="flex justify-center items-center">
+                        {stats.map((stat, i) => (
+                            <div key={i} className="space-y-2 group">
+                                <div className="flex items-center justify-center gap-2 text-blue-600 mb-1">
+                                    {stat.icon}
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-blue-500 transition-colors">{stat.label}</span>
+                                </div>
+                                <div className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight">{stat.value}</div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
 
