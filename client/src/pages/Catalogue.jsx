@@ -378,11 +378,17 @@ const Catalogue = () => {
                                 </div>
 
                                 <div className="pt-6 border-t border-gray-50 mt-auto flex items-center justify-between">
-                                    <div className="space-y-1">
-                                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Starting from</div>
-                                        <div className="text-2xl font-black text-blue-600 leading-none">₹{product.dailyRate}<span className="text-xs text-gray-400 font-bold ml-1">/DAY</span></div>
+                                    <div className="space-y-3">
+                                        <div className="space-y-1">
+                                            <div className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] leading-none">Daily Rate</div>
+                                            <div className="text-xl font-black text-gray-900 leading-none">₹{product.dailyRate}<span className="text-[10px] text-gray-400 font-bold ml-1">/DAY</span></div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em] leading-none">Weekly Saver</div>
+                                            <div className="text-md font-black text-emerald-600 leading-none">₹{product.weeklyRate}<span className="text-[10px] text-emerald-400 font-bold ml-1">/WEEK</span></div>
+                                        </div>
                                     </div>
-                                    <div className="w-14 h-14 bg-blue-50 group-hover:bg-blue-600 group-hover:text-white rounded-[1.5rem] flex items-center justify-center transition-all duration-300 shadow-inner group-hover:shadow-blue-200 group-hover:shadow-xl">
+                                    <div className="w-14 h-14 bg-blue-50 group-hover:bg-blue-600 group-hover:text-white rounded-[1.5rem] flex items-center justify-center transition-all duration-300 shadow-inner group-hover:shadow-blue-200 group-hover:shadow-xl self-end">
                                         <ArrowRight size={24} />
                                     </div>
                                 </div>

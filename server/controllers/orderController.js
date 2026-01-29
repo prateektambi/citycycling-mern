@@ -40,13 +40,27 @@ exports.createOrder = async (req, res) => {
         }
 
         // Financial calculations
+        const safeNum = (v) => { const n = Number(v); return isNaN(n) ? 0 : n; };
+        
         const totalRental = bookings.reduce((sum, b) => {
-            const units = b.unitsCharged || 1;
-            return sum + (b.appliedRate * b.quantity * units);
+            // Note: In some scenarios unitsCharged might be a string like "1w 2d", 
+            // but the backend should rely on actual numeric daily count if needed, 
+            // or trust the frontend's pre-calculated totalPrice per item if we decide to change the structure.
+            // For now, we will use provided values but ensure they are numbers.
+            const rate = safeNum(b.appliedRate);
+            const qty = safeNum(b.quantity);
+            const itemTotal = safeNum(b.totalPrice);
+            
+            // If the frontend passed totalPrice, use it. Otherwise calculate.
+            if (itemTotal > 0) return sum + itemTotal;
+            
+            // Fallback for older clients or if totalPrice is missing
+            return sum + (rate * qty);
         }, 0);
-        const totalDeposit = bookings.reduce((sum, b) => sum + (b.securityDeposit * b.quantity), 0);
-        const totalLogistics = Number(logistics.delivery?.charges || 0) + Number(logistics.return?.charges || 0);
-        const grandTotal = Number(totalRental) + Number(totalLogistics);
+
+        const totalDeposit = bookings.reduce((sum, b) => sum + (safeNum(b.securityDeposit) * safeNum(b.quantity)), 0);
+        const totalLogistics = safeNum(logistics.delivery?.charges) + safeNum(logistics.return?.charges);
+        const grandTotal = totalRental + totalLogistics;
 
         // Payment ledger
         const paymentHistory = [];

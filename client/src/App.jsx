@@ -1,5 +1,5 @@
 import React from 'react';
-import {BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import HowItWorks from './pages/HowItWorks';
@@ -12,15 +12,19 @@ import CreateOrder from './pages/Admin/CreateOrder';
 import ManageOrder from './pages/Admin/ManageOrder';
 import ItemList from './pages/Admin/ItemList';
 import ManageItem from './pages/Admin/ManageItem';
+import ProductList from './pages/Admin/ProductList';
+import ManageProduct from './pages/Admin/ManageProduct';
 import Login from './pages/Login';
 import AdminProtectedRoute from './components/AdminProtectedRoutes';
 import AdminLayout from './components/AdminLayout';
 import Unauthorized from './pages/Unauthorized';
+import ScrollToTop from './components/ScrollToTop';
 import './styles/App.css';
 
 function App() {
   return (
     <div>
+      <ScrollToTop />
       <Header />
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -52,6 +56,11 @@ function App() {
           {/* Item Routes */}
           <Route path="items" element={<ItemList />} />
           <Route path="items/:id" element={<ManageItem />} />
+
+          {/* Product Routes */}
+          <Route path="products" element={<ProductList />} />
+          <Route path="products/new" element={<ManageProduct />} />
+          <Route path="products/:id" element={<ManageProduct />} />
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" />} />
         </Route>

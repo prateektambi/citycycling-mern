@@ -32,6 +32,14 @@ const OrderSchema = new mongoose.Schema({
             type: String, 
             enum: ['Pending', 'Confirmed', 'Active', 'Completed', 'Cancelled'], 
             default: 'Pending' 
+        },
+        weeklyExtraRates: {
+            day1: { type: Number, default: 0 },
+            day2: { type: Number, default: 0 },
+            day3: { type: Number, default: 0 },
+            day4: { type: Number, default: 0 },
+            day5: { type: Number, default: 0 },
+            day6: { type: Number, default: 0 }
         }
     }],
 
@@ -122,7 +130,11 @@ const OrderSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    inventoryBlockedAt: { type: Date }
+    inventoryBlockedAt: { type: Date },
+    allowPartialRates: {
+        type: Boolean,
+        default: true
+    }
 
 }, { timestamps: true });
 

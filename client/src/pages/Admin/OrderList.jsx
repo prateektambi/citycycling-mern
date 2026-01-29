@@ -235,9 +235,30 @@ const OrderList = () => {
 
                             {/* Card Footer: Financials & Action */}
                             <div className="p-5 bg-gray-50/50 flex items-center justify-between border-t border-gray-100 mt-auto">
-                                <div>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase">Total Amount</p>
-                                    <p className="text-lg font-black text-gray-900">₹{order.financials.grandTotal.toLocaleString()}</p>
+                                <div className="space-y-1">
+                                    <div className="flex flex-col">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase leading-tight">Total Cost</p>
+                                        <p className="text-sm font-bold text-gray-700 leading-tight">₹{order.financials.grandTotal.toLocaleString()}</p>
+                                    </div>
+                                    <div className="pt-1">
+                                        {(() => {
+                                            const totalPaid = (order.financials.paymentHistory || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+                                            const totalRefunded = (order.financials.refundHistory || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+                                            const netPaid = totalPaid - totalRefunded;
+                                            // Balance is now Service Cost - Net Paid (Deposit is handled as a separate buffer)
+                                            const balance = (order.financials.grandTotal || 0) - netPaid;
+
+                                            if (balance <= 0) {
+                                                return <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded font-black border border-green-100 uppercase tracking-tighter">Fully Paid</span>;
+                                            }
+                                            return (
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-bold text-red-400 uppercase leading-tight">Balance Due</span>
+                                                    <span className="text-base font-black text-red-600 leading-tight">₹{balance.toLocaleString()}</span>
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
                                 </div>
                                 <button 
                                     onClick={() => navigate(`/admin/orders/${order.orderId}`)}

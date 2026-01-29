@@ -24,7 +24,8 @@ const CreateOrder = () => {
             grandTotal: 0,
             paymentStatus: 'Unpaid'
         },
-        orderStatus: 'Pending'
+        orderStatus: 'Pending',
+        allowPartialRates: true
     });
 
     useEffect(() => {
@@ -38,45 +39,92 @@ const CreateOrder = () => {
         let bookingsChanged = false;
 
         const updatedBookings = orderData.bookings.map(item => {
-            // Safety check: if dates or product aren't selected yet, return item as is
             if (!item.startDate || !item.endDate || !item.product) return item;
 
+            const product = availableProducts.find(p => p._id === item.product);
             const start = new Date(item.startDate);
             const end = new Date(item.endDate);
+            const diffMs = end.getTime() - start.getTime();
+            if (isNaN(diffMs)) return item;
+            const diffDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
             
-            // Calculate days (minimum 1 day)
-            const diffDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
-            
-            let unitsToCharge = 0;
+            let itemRental = 0;
+            let unitsChargedLabel = "";
+
+            const safeNum = (v) => { const n = Number(v); return isNaN(n) ? 0 : n; };
+            const rate = safeNum(item.appliedRate);
+            const qty = safeNum(item.quantity);
+            const dep = safeNum(item.securityDeposit);
+
+            let breakdown = "";
+
             if (item.rentalType === 'Weekly') {
-                unitsToCharge = Math.ceil(diffDays / 7);
+                const weeks = Math.floor(diffDays / 7);
+                const extraDays = diffDays % 7;
+                
+                if (orderData.allowPartialRates) {
+                    const itemExtraRates = item.weeklyExtraRates || (product?.weeklyExtraRates || {});
+                    const extraDayVal = itemExtraRates[`day${extraDays}`];
+                    const extraRate = (extraDayVal !== undefined && extraDayVal !== null && extraDayVal !== '') ? Number(extraDayVal) : 0;
+                    
+                    itemRental = (weeks * rate * qty) + (extraRate * qty);
+                    unitsChargedLabel = extraDays > 0 ? `${weeks}w ${extraDays}d` : `${weeks} weeks`;
+                    
+                    if (extraDays > 0) {
+                        breakdown = `${qty}x [(${weeks}w * ₹${rate}) + ₹${extraRate}]`;
+                    } else {
+                        breakdown = `${qty}x (${weeks}w * ₹${rate})`;
+                    }
+                } else {
+                    const chargedWeeks = Math.ceil(diffDays / 7);
+                    itemRental = chargedWeeks * rate * qty;
+                    unitsChargedLabel = `${chargedWeeks} weeks`;
+                    breakdown = `${qty}x (${chargedWeeks}w * ₹${rate})`;
+                }
             } else if (item.rentalType === 'Monthly') {
-                unitsToCharge = Math.ceil(diffDays / 30);
+                const months = Math.floor(diffDays / 30);
+                const extraDays = diffDays % 30;
+
+                if (orderData.allowPartialRates) {
+                    const baseMonthly = months * rate;
+                    const dailyProrated = (rate / 30) * extraDays;
+                    const roundedExtra = Math.ceil(dailyProrated / 50) * 50;
+                    itemRental = (baseMonthly + roundedExtra) * qty;
+                    unitsChargedLabel = extraDays > 0 ? `${months}m ${extraDays}d` : `${months} months`;
+                    
+                    if (extraDays > 0) {
+                        breakdown = `${qty}x [(${months}m * ₹${rate}) + ₹${roundedExtra}]`;
+                    } else {
+                        breakdown = `${qty}x (${months}m * ₹${rate})`;
+                    }
+                } else {
+                    const chargedMonths = Math.ceil(diffDays / 30);
+                    itemRental = chargedMonths * rate * qty;
+                    unitsChargedLabel = `${chargedMonths} months`;
+                    breakdown = `${qty}x (${chargedMonths}m * ₹${rate})`;
+                }
             } else {
-                unitsToCharge = diffDays;
+                itemRental = diffDays * rate * qty;
+                unitsChargedLabel = `${diffDays} days`;
+                breakdown = `${qty}x (${diffDays}d * ₹${rate})`;
             }
 
-            // Ensure we use Numbers to prevent NaN
-            const rate = Number(item.appliedRate) || 0;
-            const qty = Number(item.quantity) || 0;
-            const dep = Number(item.securityDeposit) || 0;
-
-            const itemRental = unitsToCharge * rate * qty;
             const itemDeposit = dep * qty;
-            
             rentalTotal += itemRental;
             depositTotal += itemDeposit;
 
-            // Check if calculated values differ from current state to avoid infinite loops
-            if (item.durationDays !== diffDays || item.unitsCharged !== unitsToCharge) {
+            if (item.durationDays !== diffDays || 
+                item.totalPrice !== itemRental || 
+                item.breakdown !== breakdown) {
                 bookingsChanged = true;
             }
-            return { ...item, durationDays: diffDays, unitsCharged: unitsToCharge };
+            return { ...item, durationDays: diffDays, unitsCharged: unitsChargedLabel, totalPrice: itemRental, breakdown };
         });
 
-        const logisticsTotal = (Number(orderData.logistics.delivery.charges) || 0) + 
-                               (Number(orderData.logistics.return.charges) || 0);
-        const grandTotal = Number(rentalTotal) + Number(logisticsTotal);
+        const safeNum = (v) => { const n = Number(v); return isNaN(n) ? 0 : n; };
+        const logisticsTotal = safeNum(orderData.logistics.delivery.charges) + 
+                               safeNum(orderData.logistics.return.charges);
+        const grandTotal = rentalTotal + logisticsTotal;
 
         const financialsChanged = 
             orderData.financials.totalRental !== rentalTotal ||
@@ -108,7 +156,8 @@ const CreateOrder = () => {
                 product: '', productCode: '', name: '', quantity: 1, 
                 startDate: today, endDate: today, 
                 rentalType: 'Daily', appliedRate: 0, securityDeposit: 0,
-                unitsCharged: 0, durationDays: 0 // Initialize to 0 to prevent render errors
+                unitsCharged: 0, durationDays: 0,
+                weeklyExtraRates: { day1: 0, day2: 0, day3: 0, day4: 0, day5: 0, day6: 0 }
             }]
         }));
     };
@@ -130,7 +179,8 @@ const CreateOrder = () => {
             productCode: product.productCode,
             name: `${product.name} (${product.size})`,
             appliedRate: rate,
-            securityDeposit: product.securityDeposit || 500
+            securityDeposit: product.securityDeposit || 500,
+            weeklyExtraRates: product.weeklyExtraRates || { day1: 0, day2: 0, day3: 0, day4: 0, day5: 0, day6: 0 }
         };
         setOrderData({ ...orderData, bookings: newBookings });
     };
@@ -145,7 +195,20 @@ const CreateOrder = () => {
             else newBookings[index].appliedRate = product.dailyRate;
         }
 
-        newBookings[index][field] = value;
+        if (field.startsWith('weeklyExtraRates.')) {
+            const day = field.split('.')[1];
+            const numVal = value === '' ? 0 : Number(value);
+            newBookings[index].weeklyExtraRates = {
+                ...newBookings[index].weeklyExtraRates,
+                [day]: isNaN(numVal) ? 0 : numVal
+            };
+        } else if (['appliedRate', 'quantity', 'securityDeposit'].includes(field)) {
+            const numVal = value === '' ? 0 : Number(value);
+            newBookings[index][field] = isNaN(numVal) ? 0 : numVal;
+        } else {
+            newBookings[index][field] = value;
+        }
+        
         setOrderData({ ...orderData, bookings: newBookings });
     };
 
@@ -177,8 +240,38 @@ const CreateOrder = () => {
         if (!orderData.customer.name || orderData.bookings.length === 0) {
             alert("Missing required fields."); return;
         }
+
+        const safeNum = (v) => { const n = Number(v); return isNaN(n) ? 0 : n; };
+
+        // Double-ensure numbers before sending
+        const finalData = {
+            ...orderData,
+            financials: {
+                ...orderData.financials,
+                totalRental: safeNum(orderData.financials.totalRental),
+                totalDeposit: safeNum(orderData.financials.totalDeposit),
+                totalLogistics: safeNum(orderData.financials.totalLogistics),
+                grandTotal: safeNum(orderData.financials.grandTotal)
+            },
+            logistics: {
+                delivery: { ...orderData.logistics.delivery, charges: safeNum(orderData.logistics.delivery.charges) },
+                return: { ...orderData.logistics.return, charges: safeNum(orderData.logistics.return.charges) }
+            },
+            initialPayment: {
+                ...orderData.initialPayment,
+                amount: safeNum(orderData.initialPayment.amount)
+            },
+            bookings: orderData.bookings.map(b => ({
+                ...b,
+                appliedRate: safeNum(b.appliedRate),
+                quantity: safeNum(b.quantity),
+                securityDeposit: safeNum(b.securityDeposit),
+                totalPrice: safeNum(b.totalPrice)
+            }))
+        };
+
         try {
-            await orderService.create(orderData);
+            await orderService.create(finalData);
             navigate('/admin/orders');
         } catch (err) {
             console.error(err);
@@ -217,9 +310,20 @@ const CreateOrder = () => {
                 <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
                     <div className="p-6 border-b flex justify-between items-center bg-white">
                         <h2 className="font-bold">Inventory & Duration</h2>
-                        <button onClick={addNewRow} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition">
-                            <Plus size={16}/> Add Bike
-                        </button>
+                        <div className="flex items-center gap-6">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <div 
+                                    onClick={() => setOrderData(prev => ({ ...prev, allowPartialRates: !prev.allowPartialRates }))}
+                                    className={`w-12 h-6 rounded-full transition-all relative ${orderData.allowPartialRates ? 'bg-blue-600' : 'bg-gray-200'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${orderData.allowPartialRates ? 'left-7' : 'left-1'}`}></div>
+                                </div>
+                                <span className="text-xs font-black text-gray-500 uppercase tracking-widest group-hover:text-blue-600 transition-colors">Split/Bridge Pricing</span>
+                            </label>
+                            <button onClick={addNewRow} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition">
+                                <Plus size={16}/> Add Bike
+                            </button>
+                        </div>
                     </div>
                     
                     <div className="p-6 space-y-4">
@@ -259,7 +363,7 @@ const CreateOrder = () => {
                                     {/* Rate Input */}
                                     <div className="lg:col-span-2">
                                         <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Rate (₹)</label>
-                                        <input type="number" min="0" value={item.appliedRate} className="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" onChange={(e) => updateBookingField(idx, 'appliedRate', e.target.value)} />
+                                        <input type="number" min="0" value={item.appliedRate || ''} placeholder="0" className="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" onChange={(e) => updateBookingField(idx, 'appliedRate', e.target.value)} />
                                     </div>
 
                                     {/* Quantity */}
@@ -279,16 +383,47 @@ const CreateOrder = () => {
                                     </div>
                                     
                                     {/* Footer Info Row */}
-                                    <div className="lg:col-span-12 flex flex-wrap justify-between items-center bg-white p-3 rounded-xl border border-gray-100 mt-1">
-                                        <div className="text-xs text-gray-500 flex items-center gap-2">
-                                            <span className="bg-gray-100 px-2 py-1 rounded">{item.unitsCharged || 0} {item.rentalType}(s)</span>
-                                            <span className="text-gray-300">|</span>
-                                            <span>{item.durationDays || 0} days total</span>
+                                    <div className="lg:col-span-12 flex flex-col space-y-3 bg-white p-3 rounded-xl border border-gray-100 mt-1">
+                                        <div className="flex flex-wrap justify-between items-center">
+                                            <div className="text-[10px] text-gray-500 flex flex-col">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="bg-gray-100 px-2 py-1 rounded font-bold text-gray-700">{item.unitsCharged || '0 days'}</span>
+                                                    <span className="text-gray-300">|</span>
+                                                    <span>{item.durationDays || 0} days total</span>
+                                                </div>
+                                                <div className="mt-1 text-[9px] font-mono text-gray-400">
+                                                    {item.breakdown}
+                                                </div>
+                                            </div>
+                                            <div className="font-bold text-gray-800">
+                                                ₹{(item.totalPrice || 0).toLocaleString()}
+                                            </div>
                                         </div>
-                                        <div className="font-bold text-gray-800">
-                                            <span className="text-xs text-gray-400 font-normal mr-2">Subtotal:</span>
-                                            ₹{((item.unitsCharged || 0) * (item.appliedRate || 0) * (item.quantity || 0)).toLocaleString()}
-                                        </div>
+
+                                        {/* Bridge Rates Adjustment UI */}
+                                        {item.rentalType === 'Weekly' && orderData.allowPartialRates && (() => {
+                                            const start = new Date(item.startDate);
+                                            const end = new Date(item.endDate);
+                                            const diffDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+                                            const extraDays = diffDays % 7;
+
+                                            if (extraDays === 0) return null;
+
+                                            return (
+                                                <div className="pt-3 border-t border-gray-50 flex items-center justify-between">
+                                                    <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Adjust {extraDays} Extra Day(s) Price</p>
+                                                    <div className="w-32">
+                                                        <input 
+                                                            type="number" 
+                                                            value={item.weeklyExtraRates && item.weeklyExtraRates[`day${extraDays}`] !== 0 ? item.weeklyExtraRates[`day${extraDays}`] : ''} 
+                                                            placeholder="0"
+                                                            className="w-full border border-gray-100 p-1.5 rounded-lg text-[10px] font-bold text-emerald-700 outline-none focus:border-emerald-200 bg-emerald-50/30"
+                                                            onChange={(e) => updateBookingField(idx, `weeklyExtraRates.day${extraDays}`, e.target.value)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             </div>
@@ -312,7 +447,7 @@ const CreateOrder = () => {
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Delivery Charge</label>
-                                        <input type="number" placeholder="0" value={orderData.logistics.delivery.charges} className="border p-3 rounded-xl w-full text-sm" onChange={(e) => updateLogisticsField('delivery', 'charges', e.target.value)} />
+                                        <input type="number" placeholder="0" value={orderData.logistics.delivery.charges || ''} className="border p-3 rounded-xl w-full text-sm" onChange={(e) => updateLogisticsField('delivery', 'charges', e.target.value)} />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -325,7 +460,7 @@ const CreateOrder = () => {
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Return Charge</label>
-                                        <input type="number" placeholder="0" value={orderData.logistics.return.charges} className="border p-3 rounded-xl w-full text-sm" onChange={(e) => updateLogisticsField('return', 'charges', e.target.value)} />
+                                        <input type="number" placeholder="0" value={orderData.logistics.return.charges || ''} className="border p-3 rounded-xl w-full text-sm" onChange={(e) => updateLogisticsField('return', 'charges', e.target.value)} />
                                     </div>
                                 </div>
                             </div>
@@ -336,7 +471,7 @@ const CreateOrder = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Amount Received</label>
-                                    <input type="number" placeholder="0" value={orderData.initialPayment.amount} className="border p-3 rounded-xl w-full text-sm" onChange={(e) => updatePaymentField('amount', e.target.value)} />
+                                    <input type="number" placeholder="0" value={orderData.initialPayment.amount || ''} className="border p-3 rounded-xl w-full text-sm" onChange={(e) => updatePaymentField('amount', e.target.value)} />
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Payment Method</label>
@@ -360,13 +495,14 @@ const CreateOrder = () => {
                             <h3 className="font-bold text-xl">Order Summary</h3>
                             <CreditCard />
                         </div>
-                        <div className="space-y-1 text-sm opacity-80">
-                            <div className="flex justify-between"><span>Rental Subtotal</span><span>₹{orderData.financials.totalRental.toLocaleString()}</span></div>
-                            <div className="flex justify-between"><span>Security Deposits</span><span>₹{orderData.financials.totalDeposit.toLocaleString()}</span></div>
-                            <div className="flex justify-between"><span>Logistics Fees</span><span>₹{orderData.financials.totalLogistics.toLocaleString()}</span></div>
+                        <div className="space-y-1 text-sm opacity-80 font-medium">
+                            <div className="flex justify-between"><span>Rental</span><span>₹{orderData.financials.totalRental.toLocaleString()}</span></div>
+                            <div className="flex justify-between"><span>Transportation Cost</span><span>₹{orderData.financials.totalLogistics.toLocaleString()}</span></div>
+                            <div className="flex justify-between"><span>Security Deposit (Refundable)</span><span>₹{orderData.financials.totalDeposit.toLocaleString()}</span></div>
                         </div>
-                        <div className="pt-4 border-t border-white/20 flex justify-between text-4xl font-black">
-                            <span>₹{orderData.financials.grandTotal.toLocaleString()}</span>
+                        <div className="pt-4 border-t border-white/20 flex justify-between items-center text-white">
+                            <span className="text-xl font-bold">Total Cost</span>
+                            <span className="text-4xl font-black">₹{orderData.financials.grandTotal.toLocaleString()}</span>
                         </div>
                     </div>
                 </div>

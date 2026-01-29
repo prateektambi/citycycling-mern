@@ -11,8 +11,8 @@ const AdminLayout = () => {
   const navItems = [
     { name: 'Active Orders', path: '/admin/orders', icon: <ShoppingCart size={20}/> },
     { name: 'New Order', path: '/admin/orders/new', icon: <PlusCircle size={20}/> },
-    { name: 'Items', path: '/admin/items', icon: <Package size={20}/> },
-    { name: 'Inventory', path: '/admin/inventory', icon: <Bike size={20}/> },
+    { name: 'Fleet/Catalogue', path: '/admin/products', icon: <Bike size={20}/> },
+    { name: 'Physical Stock', path: '/admin/items', icon: <Package size={20}/> },
   ];
 
   const isActive = (path) => location.pathname === path;

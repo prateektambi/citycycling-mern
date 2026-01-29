@@ -65,7 +65,8 @@ const ManageOrder = () => {
             paymentStatus: 'Unpaid'
         },
         orderStatus: 'On-Hold',
-        tags: []
+        tags: [],
+        allowPartialRates: true
     });
 
     useEffect(() => {
@@ -113,33 +114,92 @@ const ManageOrder = () => {
         const updatedBookings = orderData.bookings.map(item => {
             if (!item.startDate || !item.endDate || !item.product) return item;
 
+            const product = availableProducts.find(p => p._id === item.product);
             const start = new Date(item.startDate);
             const end = new Date(item.endDate);
-            const diffDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+            const diffMs = end.getTime() - start.getTime();
+            if (isNaN(diffMs)) return item;
+            const diffDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 
-            let unitsToCharge = 0;
-            if (item.rentalType === 'Weekly') unitsToCharge = Math.ceil(diffDays / 7);
-            else if (item.rentalType === 'Monthly') unitsToCharge = Math.ceil(diffDays / 30);
-            else unitsToCharge = diffDays;
+            let itemRental = 0;
+            let unitsChargedLabel = "";
 
-            const rate = Number(item.appliedRate) || 0;
-            const qty = Number(item.quantity) || 0;
-            const dep = Number(item.securityDeposit) || 0;
+            const safeNum = (v) => { const n = Number(v); return isNaN(n) ? 0 : n; };
+            const rate = safeNum(item.appliedRate);
+            const qty = safeNum(item.quantity);
+            const dep = safeNum(item.securityDeposit);
 
-            rentalTotal += (unitsToCharge * rate * qty);
-            depositTotal += (dep * qty);
+            let breakdown = "";
 
-            if (item.durationDays !== diffDays || item.unitsCharged !== unitsToCharge) {
+            if (item.rentalType === 'Weekly') {
+                const weeks = Math.floor(diffDays / 7);
+                const extraDays = diffDays % 7;
+                
+                if (orderData.allowPartialRates) {
+                    const itemExtraRates = item.weeklyExtraRates || (product?.weeklyExtraRates || {});
+                    const extraDayVal = itemExtraRates[`day${extraDays}`];
+                    const extraRate = (extraDayVal !== undefined && extraDayVal !== null && extraDayVal !== '') ? Number(extraDayVal) : 0;
+                    
+                    itemRental = (weeks * rate * qty) + (extraRate * qty);
+                    unitsChargedLabel = extraDays > 0 ? `${weeks}w ${extraDays}d` : `${weeks} weeks`;
+
+                    if (extraDays > 0) {
+                        breakdown = `${qty}x [(${weeks}w * ₹${rate}) + ₹${extraRate}]`;
+                    } else {
+                        breakdown = `${qty}x (${weeks}w * ₹${rate})`;
+                    }
+                } else {
+                    const chargedWeeks = Math.ceil(diffDays / 7);
+                    itemRental = chargedWeeks * rate * qty;
+                    unitsChargedLabel = `${chargedWeeks} weeks`;
+                    breakdown = `${qty}x (${chargedWeeks}w * ₹${rate})`;
+                }
+            } else if (item.rentalType === 'Monthly') {
+                const months = Math.floor(diffDays / 30);
+                const extraDays = diffDays % 30;
+
+                if (orderData.allowPartialRates) {
+                    const baseMonthly = months * rate;
+                    const dailyProrated = (rate / 30) * extraDays;
+                    const roundedExtra = Math.ceil(dailyProrated / 50) * 50;
+                    itemRental = (baseMonthly + roundedExtra) * qty;
+                    unitsChargedLabel = extraDays > 0 ? `${months}m ${extraDays}d` : `${months} months`;
+
+                    if (extraDays > 0) {
+                        breakdown = `${qty}x [(${months}m * ₹${rate}) + ₹${roundedExtra}]`;
+                    } else {
+                        breakdown = `${qty}x (${months}m * ₹${rate})`;
+                    }
+                } else {
+                    const chargedMonths = Math.ceil(diffDays / 30);
+                    itemRental = chargedMonths * rate * qty;
+                    unitsChargedLabel = `${chargedMonths} months`;
+                    breakdown = `${qty}x (${chargedMonths}m * ₹${rate})`;
+                }
+            } else {
+                itemRental = diffDays * rate * qty;
+                unitsChargedLabel = `${diffDays} days`;
+                breakdown = `${qty}x (${diffDays}d * ₹${rate})`;
+            }
+
+            const itemDeposit = dep * qty;
+            rentalTotal += itemRental;
+            depositTotal += itemDeposit;
+
+            if (item.durationDays !== diffDays || 
+                item.totalPrice !== itemRental || 
+                item.breakdown !== breakdown) {
                 bookingsChanged = true;
             }
 
-            return { ...item, durationDays: diffDays, unitsCharged: unitsToCharge };
+            return { ...item, durationDays: diffDays, unitsCharged: unitsChargedLabel, totalPrice: itemRental, breakdown };
         });
 
-        const logiCharges = (Number(orderData.logistics.delivery.charges) || 0) + 
-                           (Number(orderData.logistics.return.charges) || 0);
+        const safeNum = (v) => { const n = Number(v); return isNaN(n) ? 0 : n; };
+        const logiCharges = safeNum(orderData.logistics.delivery.charges) + 
+                           safeNum(orderData.logistics.return.charges);
 
-        const newGrandTotal = rentalTotal + depositTotal + logiCharges;
+        const newGrandTotal = rentalTotal + logiCharges;
         
         // Calculate Payments
         const totalPaid = (orderData.financials.paymentHistory || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
@@ -216,14 +276,27 @@ const ManageOrder = () => {
             product: product._id,
             name: `${product.name} (${product.size})`,
             appliedRate: rate,
-            securityDeposit: product.securityDeposit || 500
+            securityDeposit: product.securityDeposit || 500,
+            weeklyExtraRates: product.weeklyExtraRates || { day1: 0, day2: 0, day3: 0, day4: 0, day5: 0, day6: 0 }
         };
         setOrderData({ ...orderData, bookings: newBookings });
     };
 
     const updateBookingField = (index, field, value) => {
         const newBookings = [...orderData.bookings];
-        newBookings[index][field] = value;
+        if (field.startsWith('weeklyExtraRates.')) {
+            const day = field.split('.')[1];
+            const numVal = value === '' ? 0 : Number(value);
+            newBookings[index].weeklyExtraRates = {
+                ...newBookings[index].weeklyExtraRates,
+                [day]: isNaN(numVal) ? 0 : numVal
+            };
+        } else if (['appliedRate', 'quantity', 'securityDeposit'].includes(field)) {
+            const numVal = value === '' ? 0 : Number(value);
+            newBookings[index][field] = isNaN(numVal) ? 0 : numVal;
+        } else {
+            newBookings[index][field] = value;
+        }
         setOrderData({ ...orderData, bookings: newBookings });
     };
 
@@ -239,8 +312,33 @@ const ManageOrder = () => {
     };
 
     const handleUpdateOrder = async () => {
+        const safeNum = (v) => { const n = Number(v); return isNaN(n) ? 0 : n; };
+
+        // Double-ensure numbers before sending
+        const finalData = {
+            ...orderData,
+            financials: {
+                ...orderData.financials,
+                totalRental: safeNum(orderData.financials.totalRental),
+                totalDeposit: safeNum(orderData.financials.totalDeposit),
+                totalLogistics: safeNum(orderData.financials.totalLogistics),
+                grandTotal: safeNum(orderData.financials.grandTotal)
+            },
+            logistics: {
+                delivery: { ...orderData.logistics.delivery, charges: safeNum(orderData.logistics.delivery.charges) },
+                return: { ...orderData.logistics.return, charges: safeNum(orderData.logistics.return.charges) }
+            },
+            bookings: orderData.bookings.map(b => ({
+                ...b,
+                appliedRate: safeNum(b.appliedRate),
+                quantity: safeNum(b.quantity),
+                securityDeposit: safeNum(b.securityDeposit),
+                totalPrice: safeNum(b.totalPrice)
+            }))
+        };
+
         try {
-            await orderService.update(id, orderData);
+            await orderService.update(id, finalData);
             alert("Order updated successfully!");
             navigate('/admin/orders');
         } catch (err) {
@@ -434,12 +532,23 @@ const ManageOrder = () => {
                 <div className="space-y-4">
                     <div className="flex justify-between items-center px-2">
                         <h2 className="font-bold text-gray-700 flex items-center gap-2"><Calendar size={18}/> Booked Inventory</h2>
-                        <button 
-                            onClick={() => setOrderData({...orderData, bookings: [...orderData.bookings, { product: '', quantity: 1, startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0], rentalType: 'Daily', appliedRate: 0, securityDeposit: 0 }]})}
-                            className="bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2"
-                        >
-                            <Plus size={14}/> Add Bike
-                        </button>
+                        <div className="flex items-center gap-6">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <div 
+                                    onClick={() => setOrderData(prev => ({ ...prev, allowPartialRates: !prev.allowPartialRates }))}
+                                    className={`w-12 h-6 rounded-full transition-all relative ${orderData.allowPartialRates ? 'bg-blue-600' : 'bg-gray-200'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${orderData.allowPartialRates ? 'left-7' : 'left-1'}`}></div>
+                                </div>
+                                <span className="text-xs font-black text-gray-500 uppercase tracking-widest group-hover:text-blue-600 transition-colors">Split/Bridge Pricing</span>
+                            </label>
+                            <button 
+                                onClick={() => setOrderData({...orderData, bookings: [...orderData.bookings, { product: '', quantity: 1, startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0], rentalType: 'Daily', appliedRate: 0, securityDeposit: 0, weeklyExtraRates: { day1: 0, day2: 0, day3: 0, day4: 0, day5: 0, day6: 0 } }]})}
+                                className="bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2"
+                            >
+                                <Plus size={14}/> Add Bike
+                            </button>
+                        </div>
                     </div>
 
                     {orderData.bookings.map((item, idx) => (
@@ -484,22 +593,64 @@ const ManageOrder = () => {
                                         <input type="date" value={item.startDate} className="border p-3 rounded-xl text-xs" onChange={(e) => updateBookingField(idx, 'startDate', e.target.value)} />
                                         <input type="date" value={item.endDate} className="border p-3 rounded-xl text-xs" onChange={(e) => updateBookingField(idx, 'endDate', e.target.value)} />
                                     </div>
-                                    <div className="p-3 bg-blue-50 rounded-xl text-blue-600 text-xs font-bold flex justify-between">
-                                        <span>Duration:</span>
-                                        <span>{item.durationDays || 0} Days ({item.unitsCharged || 0} Unit/s)</span>
+                                    <div className="p-3 bg-blue-50 rounded-xl text-blue-600 space-y-1">
+                                        <div className="flex justify-between text-xs font-bold">
+                                            <span>Duration:</span>
+                                            <span>{item.durationDays || 0} Days ({item.unitsCharged || 0})</span>
+                                        </div>
+                                        <div className="text-[9px] font-mono opacity-70">
+                                            {item.breakdown}
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div className="bg-gray-50 p-4 rounded-2xl flex flex-col justify-center">
                                     <span className="text-[10px] font-bold text-gray-400 uppercase">Rate & Deposit</span>
-                                    <p className="text-sm font-bold text-gray-700 mt-1">₹{item.appliedRate} / {item.rentalType}</p>
-                                    <p className="text-xs text-gray-400">Security: ₹{item.securityDeposit} per bike</p>
-                                    <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-end">
-                                        <span className="text-xs font-bold text-gray-400">SUBTOTAL</span>
-                                        <span className="text-xl font-black text-gray-900">₹{(Number(item.appliedRate) * Number(item.quantity) * (item.unitsCharged || 0)).toLocaleString()}</span>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <p className="text-sm font-bold text-gray-700">₹</p>
+                                        <input 
+                                            type="number" 
+                                            value={item.appliedRate || ''} 
+                                            placeholder="0"
+                                            className="w-20 bg-transparent border-b border-gray-200 text-sm font-bold text-gray-700 outline-none focus:border-blue-400"
+                                            onChange={(e) => updateBookingField(idx, 'appliedRate', e.target.value)}
+                                        />
+                                        <p className="text-xs text-gray-400">/ {item.rentalType}</p>
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-1">Security: ₹{item.securityDeposit} / qty</p>
+                                    
+                                    <div className="mt-4 pt-4 border-t border-gray-200 flex flex-col gap-2">
+                                        <div className="flex justify-between items-end">
+                                            <span className="text-xl font-black text-gray-900">₹{(item.totalPrice || 0).toLocaleString()}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Bridge Rates Adjustment UI */}
+                            {item.rentalType === 'Weekly' && orderData.allowPartialRates && (() => {
+                                const start = new Date(item.startDate);
+                                const end = new Date(item.endDate);
+                                const diffDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+                                const extraDays = diffDays % 7;
+
+                                if (extraDays === 0) return null;
+
+                                return (
+                                    <div className="mt-6 pt-6 border-t border-gray-100 flex items-center justify-between">
+                                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Adjust {extraDays} Extra Day(s) Price</p>
+                                        <div className="w-32">
+                                            <input 
+                                                type="number" 
+                                                value={item.weeklyExtraRates && item.weeklyExtraRates[`day${extraDays}`] !== 0 ? item.weeklyExtraRates[`day${extraDays}`] : ''} 
+                                                placeholder="0"
+                                                className="w-full bg-emerald-50/50 border border-emerald-100 p-2 rounded-xl text-sm font-bold text-emerald-700 outline-none focus:ring-2 focus:ring-emerald-200"
+                                                onChange={(e) => updateBookingField(idx, `weeklyExtraRates.day${extraDays}`, e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </div>
                     ))}
                 </div>
@@ -516,7 +667,7 @@ const ManageOrder = () => {
                                         <option value="Self-Pickup">Self-Pickup</option>
                                         <option value="Home-Delivery">Home-Delivery</option>
                                     </select>
-                                    <input type="number" value={orderData.logistics.delivery.charges} className="border p-2.5 rounded-xl text-sm" onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, delivery: {...orderData.logistics.delivery, charges: e.target.value}}})} />
+                                    <input type="number" value={orderData.logistics.delivery.charges || ''} placeholder="0" className="border p-2.5 rounded-xl text-sm" onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, delivery: {...orderData.logistics.delivery, charges: e.target.value}}})} />
                                 </div>
                             </div>
                             <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-2xl space-y-3">
@@ -526,7 +677,7 @@ const ManageOrder = () => {
                                         <option value="Self-Drop">Self-Drop</option>
                                         <option value="Home-Collection">Home-Collection</option>
                                     </select>
-                                    <input type="number" value={orderData.logistics.return.charges} className="border p-2.5 rounded-xl text-sm" onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, return: {...orderData.logistics.return, charges: e.target.value}}})} />
+                                    <input type="number" value={orderData.logistics.return.charges || ''} placeholder="0" className="border p-2.5 rounded-xl text-sm" onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, return: {...orderData.logistics.return, charges: e.target.value}}})} />
                                 </div>
                             </div>
                         </div>
@@ -602,17 +753,19 @@ const ManageOrder = () => {
                             <h3 className="font-bold text-xl">Order Summary</h3>
                             <CreditCard />
                         </div>
-                        <div className="space-y-1 text-sm opacity-80 font-medium">
-                            <div className="flex justify-between"><span>Rental Subtotal</span><span>₹{orderData.financials.totalRental.toLocaleString()}</span></div>
-                            <div className="flex justify-between"><span>Security Deposits</span><span>₹{orderData.financials.totalDeposit.toLocaleString()}</span></div>
-                            <div className="flex justify-between"><span>Logistics Fees</span><span>₹{orderData.financials.totalLogistics.toLocaleString()}</span></div>
-                            <div className="pt-2 mt-2 border-t border-white/10 flex justify-between text-white">
-                                <span>Net Paid</span>
+                         <div className="space-y-1 text-sm opacity-80 font-medium">
+                            <div className="flex justify-between"><span>Rental</span><span>₹{orderData.financials.totalRental.toLocaleString()}</span></div>
+                            <div className="flex justify-between"><span>Transportation Cost</span><span>₹{orderData.financials.totalLogistics.toLocaleString()}</span></div>
+                            <div className="flex justify-between"><span>Security Deposit (Refundable)</span><span>₹{orderData.financials.totalDeposit.toLocaleString()}</span></div>
+                            
+                            <div className="flex justify-between text-white">
+                                <span>Net Paid to Date</span>
                                 <span>₹{((orderData.financials.totalPaid || 0) - (orderData.financials.totalRefunded || 0)).toLocaleString()}</span>
                             </div>
                         </div>
-                        <div className="pt-4 border-t border-white/20 flex justify-between text-4xl font-black">
-                            <span>₹{orderData.financials.grandTotal.toLocaleString()}</span>
+                        <div className="pt-4 border-t border-white/20 flex justify-between items-center text-white">
+                            <span className="text-xl font-bold">Total Cost</span>
+                            <span className="text-4xl font-black">₹{orderData.financials.grandTotal.toLocaleString()}</span>
                         </div>
                     </div>
                 </div>
