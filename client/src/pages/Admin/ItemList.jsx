@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, ChevronRight, Filter, X, Bike, Wrench, Archive, CheckCircle } from 'lucide-react';
+import { Search, ChevronRight, Filter, X, Bike, Wrench, Archive, CheckCircle, Plus } from 'lucide-react';
 import axios from 'axios';
 
 const ItemList = () => {
