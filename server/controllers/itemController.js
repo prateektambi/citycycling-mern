@@ -205,11 +205,43 @@ const deleteMaintenance = async (req, res) => {
     }
 };
 
+// === CREATE NEW ITEM ===
+const createItem = async (req, res) => {
+    try {
+        const { product, chassisNumber, purchaseDetails, status } = req.body;
+        
+        if (!product) {
+            return res.status(400).json({ message: 'Product is required' });
+        }
+        
+        const newItem = new Item({
+            product,
+            chassisNumber,
+            purchaseDetails,
+            status: status || 'available'
+        });
+        
+        await newItem.save();
+        
+        // If the new item is 'available', increment the product's inventoryCount
+        if (newItem.status === 'available') {
+            await Product.findByIdAndUpdate(product, { $inc: { inventoryCount: 1 } });
+            await updateProductAvailability(product);
+        }
+        
+        res.status(201).json({ message: 'Item created successfully', item: newItem });
+    } catch (error) {
+        console.error('Error creating item:', error);
+        res.status(500).json({ message: 'Error creating item', error: error.message });
+    }
+};
+
 module.exports = {
     getItems,
     getItemById,
     updateItemStatus,
     addMaintenance,
     updateItem,
-    deleteMaintenance
+    deleteMaintenance,
+    createItem
 };

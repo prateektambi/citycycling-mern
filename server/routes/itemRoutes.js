@@ -6,11 +6,15 @@ const {
     updateItemStatus,
     addMaintenance,
     updateItem,
-    deleteMaintenance
+    deleteMaintenance,
+    createItem
 } = require('../controllers/itemController');
 
 // Get all items (with optional filtering)
 router.get('/', getItems);
+
+// Create new item
+router.post('/', createItem);
 
 // Get single item by ID
 router.get('/:id', getItemById);

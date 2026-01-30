@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { productService } from '../services/productService';
 import { Filter, X, Search, Bike, ChevronDown, Calendar, ArrowRight, SlidersHorizontal, Users, Star } from 'lucide-react';
 
-const bikeTypes = ['MTB', 'Road Bike', 'Hybrid'];
+const bikeTypes = ['MTB', 'Road Bike', 'Hybrid', 'Electric', 'Kids 3 To 6 Years', 'Kids 6 To 10 Years'];
 
 const Catalogue = () => {
     const [searchParams, setSearchParams] = useSearchParams();

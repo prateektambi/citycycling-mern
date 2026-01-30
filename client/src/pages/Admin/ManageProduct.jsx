@@ -216,6 +216,8 @@ const ManageProduct = () => {
                                 <option value="Road Bike">Road Bike</option>
                                 <option value="Hybrid">Hybrid</option>
                                 <option value="Electric">Electric</option>
+                                <option value="Kids 3 To 6 Years">Kids 3 To 6 Years</option>
+                                <option value="Kids 6 To 10 Years">Kids 6 To 10 Years</option>
                             </select>
                         </div>
                         <div className="space-y-2">

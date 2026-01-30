@@ -55,6 +55,7 @@ function App() {
           
           {/* Item Routes */}
           <Route path="items" element={<ItemList />} />
+          <Route path="items/new" element={<ManageItem />} />
           <Route path="items/:id" element={<ManageItem />} />
 
           {/* Product Routes */}

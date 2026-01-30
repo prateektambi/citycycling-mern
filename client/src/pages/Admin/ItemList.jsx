@@ -79,6 +79,13 @@ const ItemList = () => {
                                 />
                             </div>
                             <button 
+                                onClick={() => navigate('/admin/items/new')} 
+                                className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-100 whitespace-nowrap"
+                            >
+                                <Plus size={18} />
+                                Add Item
+                            </button>
+                            <button 
                                 onClick={() => setShowFilters(!showFilters)} 
                                 className={`p-2.5 rounded-xl transition border ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-gray-200 text-gray-500'}`}
                             >

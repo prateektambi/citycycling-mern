@@ -12,7 +12,9 @@ const AdminLayout = () => {
     { name: 'Active Orders', path: '/admin/orders', icon: <ShoppingCart size={20}/> },
     { name: 'New Order', path: '/admin/orders/new', icon: <PlusCircle size={20}/> },
     { name: 'Fleet/Catalogue', path: '/admin/products', icon: <Bike size={20}/> },
+    { name: 'Add Catalogue', path: '/admin/products/new', icon: <PlusCircle size={20}/> },
     { name: 'Physical Stock', path: '/admin/items', icon: <Package size={20}/> },
+    { name: 'Add Physical Item', path: '/admin/items/new', icon: <PlusCircle size={20}/> },
   ];
 
   const isActive = (path) => location.pathname === path;
