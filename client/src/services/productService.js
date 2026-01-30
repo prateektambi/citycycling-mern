@@ -35,5 +35,11 @@ export const productService = {
     delete: async (id) => {
         const response = await API.delete(`/api/products/${id}`);
         return response.data;
+    },
+
+    // Repair availability and inventory
+    repair: async (id) => {
+        const response = await API.post(`/api/products/repair/${id}`);
+        return response.data;
     }
 };

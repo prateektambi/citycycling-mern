@@ -18,24 +18,25 @@ const updateProductAvailability = async (productId, session) => {
     const product = await Product.findById(productId).session(session);
     if (!product) {
         console.error(`[AvailabilityUpdater] Product with ID ${productId} not found.`);
-        throw new Error(`Product not found for availability update.`);
+        return; // Don't throw to avoid crashing background processes
     }
     const totalInventory = product.inventoryCount;
     console.log(`[AvailabilityUpdater] Product "${product.name}" has total inventory: ${totalInventory}`);
 
-    // 2. Initialize the availability map for the next 120 days
-    const availabilityMap = new Map();
+    // 2. Initialize the availability map for the next window
+    const availabilityMap = {};
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalize to start of day
-    const availabilityWindow = config.AVAILABILITY_WINDOW_DAYS;
+    today.setHours(0, 0, 0, 0); 
+    
+    const availabilityWindow = config.AVAILABILITY_WINDOW_DAYS || 120;
 
     for (let i = 0; i < availabilityWindow; i++) {
         const date = new Date(today);
         date.setDate(today.getDate() + i);
-        const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD
-        availabilityMap.set(dateString, totalInventory);
+        // Use local date string YYYY-MM-DD to match frontend and avoid UTC shifts
+        const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        availabilityMap[dateString] = totalInventory;
     }
-    console.log(`[AvailabilityUpdater] Initialized availability map for ${availabilityWindow} days with base inventory.`);
 
     // 3. Find all relevant bookings for this product (non-cancelled/completed orders)
     const relevantOrders = await Order.find({
@@ -43,25 +44,29 @@ const updateProductAvailability = async (productId, session) => {
         'orderStatus': { $in: ['On-Hold', 'Confirmed', 'In-Progress'] }
     }).select('bookings.product bookings.startDate bookings.endDate bookings.quantity').session(session);
 
-    console.log(`[AvailabilityUpdater] Found ${relevantOrders.length} relevant orders for this product.`);
+    console.log(`[AvailabilityUpdater] Found ${relevantOrders.length} relevant orders.`);
 
     // 4. Decrement availability based on bookings
     for (const order of relevantOrders) {
         for (const booking of order.bookings) {
             if (booking.product.toString() === productId.toString()) {
-                for (let d = new Date(booking.startDate); d <= booking.endDate; d.setDate(d.getDate() + 1)) {
-                    const dateString = new Date(d).toISOString().split('T')[0];
-                    if (availabilityMap.has(dateString)) {
-                        availabilityMap.set(dateString, availabilityMap.get(dateString) - booking.quantity);
+                const start = new Date(booking.startDate);
+                const end = new Date(booking.endDate);
+                
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    const dateString = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    if (availabilityMap[dateString] !== undefined) {
+                        availabilityMap[dateString] -= booking.quantity;
                     }
                 }
             }
         }
     }
-    console.log(`[AvailabilityUpdater] Decremented counts based on active bookings.`);
 
     // 5. Update the product with the new availability map
     product.availability = availabilityMap;
+    // For Mongoose Maps, we need to tell it it's modified if we assign a plain object
+    product.markModified('availability');
     await product.save({ session });
 
     console.log(`[AvailabilityUpdater] Successfully updated availability map for product: ${productId}`);

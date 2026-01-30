@@ -93,4 +93,36 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// @route   POST /api/products/repair/:id
+// @desc    Repair availability map and inventory count for a product
+// @access  Private (Admin)
+router.post('/repair/:id', async (req, res) => {
+    try {
+        const productId = req.params.id;
+        const Item = require('../models/Item');
+        const { updateProductAvailability } = require('../utils/availabilityUpdater');
+
+        // 1. Recalculate true inventory from physical items
+        const availableItemsCount = await Item.countDocuments({
+            product: productId,
+            status: 'available'
+        });
+
+        // 2. Update the product's base inventory count
+        await Product.findByIdAndUpdate(productId, { inventoryCount: availableItemsCount });
+
+        // 3. Recalculate the 120-day availability map (subtracting active orders)
+        await updateProductAvailability(productId);
+
+        res.json({ 
+            success: true, 
+            message: 'Product availability and inventory repaired successfully',
+            newInventoryCount: availableItemsCount
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: 'Repair failed', error: err.message });
+    }
+});
+
 module.exports = router;

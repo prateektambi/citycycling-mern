@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
     ArrowLeft, Save, Bike, Trash2, Sliders, DollarSign, 
-    Image as ImageIcon, Info, Ruler, AlertCircle, ShoppingBag 
+    Image as ImageIcon, Info, Ruler, AlertCircle, ShoppingBag,
+    RefreshCw, Hammer
 } from 'lucide-react';
 import { productService } from '../../services/productService';
 
@@ -13,6 +14,7 @@ const ManageProduct = () => {
 
     const [loading, setLoading] = useState(isEdit);
     const [saving, setSaving] = useState(false);
+    const [repairing, setRepairing] = useState(false);
     
     const [formData, setFormData] = useState({
         name: '',
@@ -117,6 +119,21 @@ const ManageProduct = () => {
         }
     };
 
+    const handleRepair = async () => {
+        if (!window.confirm("This will recalculate the inventory count from physical items and refresh the availability calendar. Proceed?")) return;
+        setRepairing(true);
+        try {
+            const res = await productService.repair(id);
+            alert(`Success: ${res.message}. New inventory count: ${res.newInventoryCount}`);
+            fetchProduct(); // Refresh data
+        } catch (err) {
+            console.error("Error repairing product:", err);
+            alert("Repair failed: " + (err.response?.data?.message || err.message));
+        } finally {
+            setRepairing(false);
+        }
+    };
+
     if (loading) return <div className="p-10 text-center font-bold text-gray-400">Loading Product Data...</div>;
 
     return (
@@ -134,9 +151,20 @@ const ManageProduct = () => {
                     </div>
                     <div className="flex gap-3">
                         {isEdit && (
-                            <button onClick={handleDelete} className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl transition border border-transparent hover:border-red-100">
-                                <Trash2 size={20} />
-                            </button>
+                            <>
+                                <button 
+                                    onClick={handleRepair}
+                                    disabled={repairing}
+                                    className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition border border-transparent hover:border-blue-100 flex items-center gap-2 text-xs font-bold uppercase tracking-wider"
+                                    title="Repair Inventory & Availability"
+                                >
+                                    <Hammer size={18} className={repairing ? "animate-bounce" : ""} />
+                                    {repairing ? 'Repairing...' : 'Repair Sync'}
+                                </button>
+                                <button onClick={handleDelete} className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl transition border border-transparent hover:border-red-100">
+                                    <Trash2 size={20} />
+                                </button>
+                            </>
                         )}
                         <button 
                             onClick={handleSave}
