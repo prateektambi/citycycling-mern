@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Phone, ChevronRight, Plus, Calendar, Truck, Bike, MessageCircle, Filter, X } from 'lucide-react';
+import { Search, Phone, ChevronRight, Plus, Calendar, Truck, Bike, MessageCircle, Filter, X, User } from 'lucide-react';
 import { orderService } from '../../services/orderService';
 
 const OrderList = () => {
@@ -181,8 +181,8 @@ const OrderList = () => {
                                 {/* Customer Info */}
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold">
-                                            {order.customer.name.charAt(0)}
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${order.user ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+                                            {order.user ? <User size={20} /> : order.customer.name.charAt(0)}
                                         </div>
                                         <div>
                                             <p className="font-bold text-gray-900 leading-none">{order.customer.name}</p>

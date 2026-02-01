@@ -15,7 +15,14 @@ import ManageItem from './pages/Admin/ManageItem';
 import ProductList from './pages/Admin/ProductList';
 import ManageProduct from './pages/Admin/ManageProduct';
 import Login from './pages/Login';
+import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import UserProfile from './pages/UserProfile';
+import MyOrders from './pages/MyOrders';
 import AdminProtectedRoute from './components/AdminProtectedRoutes';
+import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
 import Unauthorized from './pages/Unauthorized';
 import ScrollToTop from './components/ScrollToTop';
@@ -34,6 +41,30 @@ function App() {
         <Route path="/catalogue" element={<Catalogue />} /> 
         <Route path="/product/:slug" element={<ProductPage />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        
+        {/* Protected User Routes */}
+        <Route 
+          path="/profile" 
+          element={
+            <ProtectedRoute>
+              <UserProfile />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/my-orders" 
+          element={
+            <ProtectedRoute>
+              <MyOrders />
+            </ProtectedRoute>
+          } 
+        />
+        
         <Route path="/unauthorized" element={<Unauthorized />} />
 
         {/* Protected Admin Routes */}

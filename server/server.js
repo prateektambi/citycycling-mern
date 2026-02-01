@@ -29,12 +29,19 @@ const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/order');
 const authRoutes = require('./routes/authRoutes');
 const itemRoutes = require('./routes/itemRoutes');
+const testRoutes = require('./routes/testRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/items', itemRoutes);
+
+// Test routes (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api/test', testRoutes);
+  console.log('📧 Test email routes enabled at /api/test/email');
+}
 
 if (process.env.NODE_ENV === 'production') {
   // Static files middleware (must come before the catch-all route)

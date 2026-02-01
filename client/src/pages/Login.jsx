@@ -1,77 +1,108 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import authService from '../services/authService';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, ArrowRight, Loader } from 'lucide-react';
 
 const Login = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
+    
     try {
-      const data = isLogin 
-      ? await authService.login(email, password) 
-      : await authService.register(email, password);
-      
+      const data = await authService.login(email, password);
       login(data); // Saves to Context and LocalStorage
-      window.location.href = '/admin/orders'; // Redirect
-      // navigate(from, { replace: true });
+      
+      // Check role to decide redirect
+      if (data.role === 'admin') {
+        navigate('/admin/orders');
+      } else {
+        navigate('/'); // Regular users go to home
+      }
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || "Authentication failed");
+      setError(err.response?.data?.message || "Invalid email or password");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        <h2 className="text-3xl font-bold text-center text-blue-600 mb-6">
-          CityCycling.in
-        </h2>
-        <h3 className="text-xl text-gray-700 text-center mb-8">
-          {isLogin ? 'Admin Login' : 'Create Account'}
-        </h3>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email Address</label>
-            <input
-              type="email"
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div className="p-8 md:p-12">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-black text-blue-600 mb-2">
+              CityCycling
+            </h2>
+            <p className="text-gray-400 font-medium">Welcome back! Please sign in.</p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Password</label>
-            <input
-              type="password"
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+          {error && (
+            <div className="bg-red-50 text-red-600 text-sm p-4 rounded-xl mb-6 font-medium border border-red-100 flex items-start gap-2">
+              <span className="mt-0.5">⚠️</span>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="relative">
+              <Mail className="absolute left-4 top-3.5 text-gray-400" size={20} />
+              <input
+                type="email"
+                required
+                placeholder="Email Address"
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="relative">
+              <Lock className="absolute left-4 top-3.5 text-gray-400" size={20} />
+              <input
+                type="password"
+                required
+                placeholder="Password"
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <Link to="/forgot-password" className="text-sm text-blue-600 font-medium hover:underline">
+                Forgot Password?
+              </Link>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-blue-700 transition shadow-lg shadow-blue-200 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed mt-4"
+            >
+              {loading ? <Loader className="animate-spin" /> : 'Sign In'}
+              {!loading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
+            </button>
+          </form>
+
+          <div className="mt-8 text-center space-y-4">
+            <p className="text-gray-500 font-medium">New to CityCycling?</p>
+            <Link
+              to="/register"
+              className="block w-full py-3 border-2 border-blue-100 text-blue-600 font-bold rounded-xl hover:bg-blue-50 transition"
+            >
+              Create Account
+            </Link>
           </div>
-
-          <button
-            type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            {isLogin ? 'Sign In' : 'Sign Up'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            {isLogin ? "Need an account? (Admin Only for now)" : "Already have an account? Sign In"}
-          </button>
         </div>
       </div>
     </div>

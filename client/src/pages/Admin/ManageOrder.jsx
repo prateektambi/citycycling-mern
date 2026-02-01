@@ -516,7 +516,16 @@ const ManageOrder = () => {
 
                 {/* 1. Customer Section */}
                 <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-                    <h2 className="font-bold flex items-center gap-2 text-gray-700"><User size={18}/> Customer Details</h2>
+                    <div className="flex justify-between items-center">
+                        <h2 className="font-bold flex items-center gap-2 text-gray-700"><User size={18}/> Customer Details</h2>
+                        {orderData.user && (
+                            <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-100 flex items-center gap-2">
+                                <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                                Registered: {orderData.user.profile?.name || 'User'} 
+                                <span className="font-normal opacity-75">({orderData.user.email})</span>
+                            </div>
+                        )}
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <input value={orderData.customer.name} placeholder="Name" className="border p-3 rounded-xl text-sm" onChange={(e) => setOrderData({...orderData, customer: {...orderData.customer, name: e.target.value}})} />
                         <input value={orderData.customer.phone} placeholder="Phone" className="border p-3 rounded-xl text-sm" onChange={(e) => setOrderData({...orderData, customer: {...orderData.customer, phone: e.target.value}})} />

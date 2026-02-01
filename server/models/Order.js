@@ -3,6 +3,12 @@ const mongoose = require('mongoose');
 const OrderSchema = new mongoose.Schema({
     orderId: { type: String, unique: true, required: true },
     
+    // Optional link to registered user
+    user: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User' 
+    },
+
     customer: {
         name: { type: String, required: true },
         phone: { type: String, required: true },

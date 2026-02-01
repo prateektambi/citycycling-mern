@@ -1,4 +1,5 @@
 const Order = require('../models/Order');
+const User = require('../models/User');
 const mongoose = require('mongoose');
 const { isTotalStockAvailable } = require('../utils/availability');
 const { updateProductAvailability } = require('../utils/availabilityUpdater');
@@ -78,8 +79,24 @@ exports.createOrder = async (req, res) => {
         // --- 4. CREATE ORDER ---
         const orderId = `CC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
+        // Match User Logic:
+        // 1. If req.user exists (Authenticated Request) and they are NOT admin (User placing order), link directly.
+        // 2. If Admin placing order OR Guest, try to find user by Phone Number.
+        let userId = null;
+        if (req.user && req.user.role === 'user') {
+            userId = req.user.id;
+        } else if (customer && customer.phone) {
+            // Admin created or Guest -> Try to match phone
+            const existingUser = await User.findOne({ 'profile.phone': customer.phone });
+            if (existingUser) {
+                userId = existingUser._id;
+                console.log(`[createOrder] Linked order to existing user: ${existingUser.email}`);
+            }
+        }
+
         const newOrder = new Order({
             orderId,
+            user: userId,
             customer,
             bookings,
             logistics,
@@ -135,10 +152,18 @@ exports.getOrders = async (req, res) => {
 
         // 2. Build a query object
         // If status exists, filter by it. If not, get everything.
-        const query = status ? { orderStatus: status } : {};
+        let query = status ? { orderStatus: status } : {};
 
-        // 3. Execute the find with the query
-        const orders = await Order.find(query).sort({ createdAt: -1 });
+        // 3. User Role Filtering
+        // If logged in User is NOT admin, they can only see their own orders
+        if (req.user && req.user.role === 'user') {
+            query.user = req.user.id;
+        }
+
+        // 4. Execute the find with the query
+        const orders = await Order.find(query)
+            .sort({ createdAt: -1 })
+            .populate('user', 'email profile.name');
         
         res.status(200).json(orders);
     } catch (error) {
@@ -149,8 +174,19 @@ exports.getOrders = async (req, res) => {
 // Get a single order by ID (for the "Edit Order" page)
 exports.getOrderById = async (req, res) => {
     try {
-        const order = await Order.findOne({ orderId: req.params.id }).populate('bookings.product');
+        const order = await Order.findOne({ orderId: req.params.id })
+            .populate('bookings.product')
+            .populate('user', 'email profile.name profile.phone');
         if (!order) return res.status(404).json({ message: "Order not found" });
+
+        // Security Check: Only Admin or Order Owner can view
+        if (req.user.role !== 'admin') {
+            // If user is not admin, they must own the order
+            if (!order.user || order.user.toString() !== req.user.id) {
+                return res.status(403).json({ message: "Not authorized to view this order" });
+            }
+        }
+
         res.status(200).json(order);
     } catch (err) {
         res.status(500).json({ message: err.message });
