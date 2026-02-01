@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Package, Calendar, Truck, Bike, ChevronRight, AlertCircle, ShoppingBag } from 'lucide-react';
+import { Search, Package, Calendar, Truck, Bike, ChevronRight, AlertCircle, ShoppingBag, CreditCard, DollarSign, RefreshCw } from 'lucide-react';
 import { orderService } from '../services/orderService';
 import { AuthContext } from '../context/AuthContext';
 
@@ -14,10 +14,6 @@ const MyOrders = () => {
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                // The service automatically handles the query param if passed, 
-                // but the backend controller is smart enough to filter by user.id 
-                // if the role is 'user', even without params.
-                // We just call getAll() and the backend does the rest.
                 const res = await orderService.getAll();
                 setOrders(res.data || res);
                 setLoading(false);
@@ -46,6 +42,23 @@ const MyOrders = () => {
             default: return 'bg-gray-50 text-gray-700 border-gray-100';
         }
     };
+    
+    const getPaymentStatusStyle = (s) => {
+        switch (s) {
+            case 'Paid': return 'bg-green-100 text-green-800';
+            case 'Partial': return 'bg-yellow-100 text-yellow-800';
+            case 'Unpaid': return 'bg-red-100 text-red-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    const formatCurrency = (amount) => `₹${amount.toLocaleString()}`;
+    const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+
 
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -67,7 +80,6 @@ const MyOrders = () => {
                         <p className="text-gray-500 mt-1">Track and manage your rentals</p>
                     </div>
                     
-                    {/* Search - Mobile Optimized */}
                     {orders.length > 0 && (
                         <div className="relative w-full md:w-72">
                             <Search className="absolute left-4 top-3.5 text-gray-400" size={18} />
@@ -99,7 +111,7 @@ const MyOrders = () => {
                                                     </div>
                                                     <div>
                                                         <h3 className="font-bold text-lg text-gray-900">{order.orderId}</h3>
-                                                        <p className="text-xs text-gray-400 font-medium">Placed on {new Date(order.createdAt).toLocaleDateString()}</p>
+                                                        <p className="text-xs text-gray-400 font-medium">Placed on {formatDate(order.createdAt)}</p>
                                                     </div>
                                                 </div>
                                                 <span className={`md:hidden px-3 py-1 rounded-full text-[10px] font-bold uppercase border ${getStatusStyle(order.orderStatus)}`}>
@@ -107,7 +119,6 @@ const MyOrders = () => {
                                                 </span>
                                             </div>
 
-                                            {/* Products Grid */}
                                             <div className="flex flex-wrap gap-2">
                                                 {order.bookings.map((item, idx) => (
                                                     <div key={idx} className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
@@ -117,7 +128,6 @@ const MyOrders = () => {
                                                 ))}
                                             </div>
 
-                                            {/* Date & Logistics */}
                                             <div className="flex items-center gap-4 text-sm text-gray-500">
                                                 <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg">
                                                     <Calendar size={14} />
@@ -144,10 +154,82 @@ const MyOrders = () => {
                                             
                                             <div className="flex flex-col items-end">
                                                 <span className="text-xs font-bold text-gray-400 uppercase">Total Amount</span>
-                                                <span className="text-2xl font-black text-gray-900">₹{order.financials.grandTotal.toLocaleString()}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-xs font-bold px-2 py-1 rounded-md ${getPaymentStatusStyle(order.financials.paymentStatus)}`}>
+                                                        {order.financials.paymentStatus}
+                                                    </span>
+                                                    <span className="text-2xl font-black text-gray-900">{formatCurrency(order.financials.grandTotal)}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
+                                    
+                                    {/* Financials Expansion */}
+                                    {(order.financials.paymentHistory?.length > 0 || order.financials.refundHistory?.length > 0) && (
+                                        <div className="mt-6 border-t border-gray-100 pt-6">
+                                            <h4 className="font-bold text-md text-gray-800 mb-4">Financials</h4>
+                                            
+                                            {/* Payment History */}
+                                            {order.financials.paymentHistory?.length > 0 && (
+                                                <div className="mb-4">
+                                                    <h5 className="flex items-center gap-2 text-sm font-semibold text-gray-600 mb-2">
+                                                        <CreditCard size={16} /> Payment History
+                                                    </h5>
+                                                    <div className="overflow-x-auto">
+                                                        <table className="min-w-full text-sm">
+                                                            <thead className="text-left text-gray-500">
+                                                                <tr>
+                                                                    <th className="p-2 font-medium">Date</th>
+                                                                    <th className="p-2 font-medium">Amount</th>
+                                                                    <th className="p-2 font-medium">Method</th>
+                                                                    <th className="p-2 font-medium hidden md:table-cell">Note</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="font-medium text-gray-800">
+                                                                {order.financials.paymentHistory.map((p, i) => (
+                                                                    <tr key={i} className="border-b border-gray-100 last:border-0">
+                                                                        <td className="p-2">{formatDate(p.date)}</td>
+                                                                        <td className="p-2 font-bold">{formatCurrency(p.amount)}</td>
+                                                                        <td className="p-2">{p.method}</td>
+                                                                        <td className="p-2 text-gray-600 hidden md:table-cell">{p.note}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Refund History */}
+                                            {order.financials.refundHistory?.length > 0 && (
+                                                 <div>
+                                                    <h5 className="flex items-center gap-2 text-sm font-semibold text-gray-600 mb-2">
+                                                        <RefreshCw size={16} /> Refund History
+                                                    </h5>
+                                                    <div className="overflow-x-auto">
+                                                        <table className="min-w-full text-sm">
+                                                            <thead className="text-left text-gray-500">
+                                                                <tr>
+                                                                    <th className="p-2 font-medium">Date</th>
+                                                                    <th className="p-2 font-medium">Amount</th>
+                                                                    <th className="p-2 font-medium">Reason</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="font-medium text-gray-800">
+                                                                {order.financials.refundHistory.map((r, i) => (
+                                                                    <tr key={i} className="border-b border-gray-100 last:border-0">
+                                                                        <td className="p-2">{formatDate(r.date)}</td>
+                                                                        <td className="p-2 font-bold">{formatCurrency(r.amount)}</td>
+                                                                        <td className="p-2">{r.reason}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))

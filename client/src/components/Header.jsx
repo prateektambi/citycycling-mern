@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import logo from '../assets/logo.png';
-import { Phone, MessageCircle, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { Phone, MessageCircle, User, LogOut, LayoutDashboard, Package } from 'lucide-react';
 import '../styles/Header.css';
 
 const Header = () => {
@@ -104,6 +104,14 @@ const Header = () => {
                           <User size={16} /> My Profile
                         </Link>
                       )}
+                      
+                      <Link 
+                          to="/my-orders" 
+                          onClick={() => setShowProfileMenu(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                        >
+                          <Package size={16} /> My Orders
+                        </Link>
                       
                       <button 
                         onClick={handleLogout}
