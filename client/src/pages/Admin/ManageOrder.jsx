@@ -894,8 +894,7 @@ const ManageOrder = () => {
                 )}
                 <button 
                     onClick={handleUpdateOrder} 
-                    disabled={orderData.orderStatus === 'Cancelled'}
-                    className={`flex-1 max-w-xl text-white py-4 rounded-2xl font-black text-lg shadow-xl transition transform active:scale-95 ${orderData.orderStatus === 'Cancelled' ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-black'}`}
+                    className="flex-1 max-w-xl bg-gray-900 text-white py-4 rounded-2xl font-black text-lg shadow-xl hover:bg-black transition transform active:scale-95"
                 >
                     Update Order Details
                 </button>

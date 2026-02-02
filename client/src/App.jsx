@@ -14,6 +14,8 @@ import ItemList from './pages/Admin/ItemList';
 import ManageItem from './pages/Admin/ManageItem';
 import ProductList from './pages/Admin/ProductList';
 import ManageProduct from './pages/Admin/ManageProduct';
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import UserList from './pages/Admin/UserList';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
@@ -76,13 +78,15 @@ function App() {
             </AdminProtectedRoute>
           }
         >
-          {/* 1. Redirect /admin directly to the list */}
-          <Route index element={<Navigate to="orders" replace />} />
+          {/* 1. Redirect /admin directly to the dashboard */}
+          <Route index element={<Navigate to="dashboard" replace />} />
           
           {/* 2. Admin Sub-routes */}
+          <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="orders" element={<OrderList />} />
           <Route path="orders/new" element={<CreateOrder />} />
           <Route path="orders/:id" element={<ManageOrder />} />
+          <Route path="users" element={<UserList />} />
           
           {/* Item Routes */}
           <Route path="items" element={<ItemList />} />

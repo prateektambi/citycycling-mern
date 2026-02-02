@@ -341,8 +341,20 @@ const OrderList = () => {
                                             // Fallback to Standard Balance Logic (Completed/Confirmed/Cancelled)
                                             const balance = (order.financials.grandTotal || 0) - netPaid;
 
+                                            // For Cancelled orders, don't show balance as "due" - show special status
+                                            if (order.orderStatus === 'Cancelled') {
+                                                if (balance <= 0) {
+                                                    return <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-black border border-gray-200 uppercase tracking-tighter">Cancelled</span>;
+                                                }
+                                                // Cancelled with pending refund
+                                                if ((order.tags || []).includes('Refund-Pending')) {
+                                                    return <span className="text-[10px] bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded font-black border border-orange-100 uppercase tracking-tighter">Refund Pending</span>;
+                                                }
+                                                return <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-black border border-gray-200 uppercase tracking-tighter">Cancelled</span>;
+                                            }
+
                                             if (balance <= 0) {
-                                                if (order.orderStatus === 'Completed' || order.orderStatus === 'Cancelled') {
+                                                if (order.orderStatus === 'Completed') {
                                                     return <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded font-black border border-green-100 uppercase tracking-tighter">Settled</span>;
                                                 }
                                                 return <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded font-black border border-green-100 uppercase tracking-tighter">Paid</span>;

@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Menu, X, Bike, ShoppingCart, LogOut, PlusCircle, Package } from 'lucide-react'; // Optional: Use lucide-react for icons
+import { Menu, X, Bike, ShoppingCart, LogOut, PlusCircle, Package, LayoutDashboard, Users } from 'lucide-react'; // Optional: Use lucide-react for icons
 
 const AdminLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -9,8 +9,10 @@ const AdminLayout = () => {
   const location = useLocation();
 
   const navItems = [
+    { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={20}/> },
     { name: 'Active Orders', path: '/admin/orders', icon: <ShoppingCart size={20}/> },
     { name: 'New Order', path: '/admin/orders/new', icon: <PlusCircle size={20}/> },
+    { name: 'Users', path: '/admin/users', icon: <Users size={20}/> },
     { name: 'Fleet/Catalogue', path: '/admin/products', icon: <Bike size={20}/> },
     { name: 'Add Catalogue', path: '/admin/products/new', icon: <PlusCircle size={20}/> },
     { name: 'Physical Stock', path: '/admin/items', icon: <Package size={20}/> },
