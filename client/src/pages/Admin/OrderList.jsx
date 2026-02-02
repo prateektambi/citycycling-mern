@@ -56,6 +56,78 @@ const OrderList = () => {
         window.open(url, '_blank');
     };
 
+    const calculateNetDueOrOverdue = (order) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const currentCost = (order.bookings || []).reduce((sum, item) => {
+            if (!item.startDate || !item.product) return sum;
+            const start = new Date(item.startDate);
+            start.setHours(0, 0, 0, 0);
+            
+            if (today < start) return sum; 
+
+            const diffTime = Math.abs(today - start);
+            const daysTillNow = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+
+            let itemCurrentCost = 0;
+            const rate =  Number(item.appliedRate) || 0;
+            const qty = Number(item.quantity) || 1;
+
+            if (item.rentalType === 'Weekly') {
+                // User requirement: 
+                // 1. < 7 days (e.g. 4th day) -> Show 1 Week cost (Min 1 week)
+                // 2. 20 days (2w + 6d) -> Show 3 Weeks (Ceiling logic usually cheaper)
+                // 3. 22 days (3w + 1d) -> Show 3w + 1d (Mixed logic usually cheaper)
+                
+                if (daysTillNow <= 7) {
+                     itemCurrentCost = rate * qty;
+                } else {
+                    const weeks = Math.floor(daysTillNow / 7);
+                    const extraDays = daysTillNow % 7;
+                    
+                    const ceilingCost = Math.ceil(daysTillNow / 7) * rate * qty;
+                    
+                    let extraCost = 0;
+                    if (extraDays > 0) {
+                        const extraRates = item.weeklyExtraRates || {};
+                        for(let i=1; i<=extraDays; i++) {
+                            extraCost += Number(extraRates[`day${i}`] || 0);
+                        }
+                        const baseCost = (weeks * rate * qty);
+                        const mixedCost = baseCost + (extraCost * qty);
+                        
+                        // Take the cheaper option (e.g. 3W vs 2W+6D)
+                        itemCurrentCost = Math.min(ceilingCost, mixedCost);
+                        
+                        // Safety: if extra rates are missing (0), fallback to ceiling to avoid undercharging
+                        if (extraCost === 0) itemCurrentCost = ceilingCost;
+                    } else {
+                        // Exact week boundary
+                        itemCurrentCost = weeks * rate * qty;
+                    }
+                }
+            } else if (item.rentalType === 'Monthly') {
+                const months = Math.ceil(daysTillNow / 30);
+                itemCurrentCost = months * rate * qty;
+            } else {
+                itemCurrentCost = daysTillNow * rate * qty;
+            }
+            return sum + itemCurrentCost;
+        }, 0);
+
+        const logisticsCost = (Number(order.logistics?.delivery?.charges) || 0) + (Number(order.logistics?.return?.charges) || 0);
+        const totalTillToday = currentCost + logisticsCost;
+        
+        const totalPaid = (order.financials.paymentHistory || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+        const totalRefunded = (order.financials.refundHistory || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+        const netPaid = totalPaid - totalRefunded;
+        
+        const currentBalance = totalTillToday - netPaid;
+
+        return { currentBalance, totalTillToday };
+    };
+
     if (loading) return <div className="p-10 text-center font-bold text-gray-400">Loading Dashboard...</div>;
 
     return (
@@ -245,16 +317,40 @@ const OrderList = () => {
                                             const totalPaid = (order.financials.paymentHistory || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
                                             const totalRefunded = (order.financials.refundHistory || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
                                             const netPaid = totalPaid - totalRefunded;
-                                            // Balance is now Service Cost - Net Paid (Deposit is handled as a separate buffer)
+                                            
+                                            // Check if we should show "Due Now" logic (active rentals)
+                                            if (order.orderStatus === 'In-Progress') {
+                                                const { currentBalance } = calculateNetDueOrOverdue(order);
+                                                if (currentBalance > 0) {
+                                                     return (
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] font-black text-red-500 uppercase leading-tight">Overdue</span>
+                                                            <span className="text-base font-black text-red-600 leading-tight">₹{currentBalance.toLocaleString()}</span>
+                                                        </div>
+                                                    );
+                                                } else if (currentBalance < 0) {
+                                                     return (
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] font-black text-green-500 uppercase leading-tight">Balance</span>
+                                                            <span className="text-base font-black text-green-600 leading-tight">₹{Math.abs(currentBalance).toLocaleString()}</span>
+                                                        </div>
+                                                    );
+                                                }
+                                            }
+
+                                            // Fallback to Standard Balance Logic (Completed/Confirmed/Cancelled)
                                             const balance = (order.financials.grandTotal || 0) - netPaid;
 
                                             if (balance <= 0) {
-                                                return <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded font-black border border-green-100 uppercase tracking-tighter">Fully Paid</span>;
+                                                if (order.orderStatus === 'Completed' || order.orderStatus === 'Cancelled') {
+                                                    return <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded font-black border border-green-100 uppercase tracking-tighter">Settled</span>;
+                                                }
+                                                return <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded font-black border border-green-100 uppercase tracking-tighter">Paid</span>;
                                             }
                                             return (
                                                 <div className="flex flex-col">
-                                                    <span className="text-[10px] font-bold text-red-400 uppercase leading-tight">Balance Due</span>
-                                                    <span className="text-base font-black text-red-600 leading-tight">₹{balance.toLocaleString()}</span>
+                                                    <span className="text-[10px] font-bold text-red-300 uppercase leading-tight">Total Due</span>
+                                                    <span className="text-base font-black text-red-400 leading-tight">₹{balance.toLocaleString()}</span>
                                                 </div>
                                             );
                                         })()}

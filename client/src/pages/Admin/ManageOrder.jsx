@@ -776,6 +776,108 @@ const ManageOrder = () => {
                             <span className="text-xl font-bold">Total Cost</span>
                             <span className="text-4xl font-black">₹{orderData.financials.grandTotal.toLocaleString()}</span>
                         </div>
+                        
+                        {/* Dynamic Current Balance Calculation */}
+                        {(() => {
+                            if (orderData.orderStatus !== 'In-Progress') return null;
+
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+
+                            const currentCost = orderData.bookings.reduce((sum, item) => {
+                                if (!item.startDate || !item.product) return sum;
+                                const start = new Date(item.startDate);
+                                start.setHours(0, 0, 0, 0);
+                                
+                                // Identify if usage has started
+                                if (today < start) return sum; 
+
+                                // Calculate days till today (inclusive or till now)
+                                // User said "Calculate costs till today", implies usage includes today if item is active.
+                                // Typically rental is counted by nights or 24h blocks, but simpler daily logic:
+                                // If I took it yesterday and checking today, it's 2 days usage if I count today.
+                                const diffTime = Math.abs(today - start);
+                                const daysTillNow = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+
+                                let itemCurrentCost = 0;
+                                const rate =  Number(item.appliedRate) || 0;
+                                const qty = Number(item.quantity) || 1;
+
+                                if (item.rentalType === 'Weekly') {
+                                    // User requirement: 
+                                    // 1. < 7 days -> 1 Week cost (Min 1 week)
+                                    // 2. 20 days -> 3 Weeks (Ceiling)
+                                    // 3. 22 days -> 3w + 1d (Mixed)
+                                    
+                                    if (daysTillNow <= 7) {
+                                         itemCurrentCost = rate * qty;
+                                    } else {
+                                        const weeks = Math.floor(daysTillNow / 7);
+                                        const extraDays = daysTillNow % 7;
+                                        
+                                        const ceilingCost = Math.ceil(daysTillNow / 7) * rate * qty;
+                                        
+                                        let extraCost = 0;
+                                        if (extraDays > 0) {
+                                            const extraRates = item.weeklyExtraRates || {};
+                                            for(let i=1; i<=extraDays; i++) {
+                                                extraCost += Number(extraRates[`day${i}`] || 0);
+                                            }
+                                            const baseCost = (weeks * rate * qty);
+                                            const mixedCost = baseCost + (extraCost * qty);
+                                            
+                                            itemCurrentCost = Math.min(ceilingCost, mixedCost);
+                                            
+                                            // Safety: if extra rates are missing (0), fallback to ceiling
+                                            if (extraCost === 0) itemCurrentCost = ceilingCost;
+                                        } else {
+                                            itemCurrentCost = weeks * rate * qty;
+                                        }
+                                    }
+                                } else if (item.rentalType === 'Monthly') {
+                                    // Basic pro-rata or ceiling logic for month
+                                    const months = Math.ceil(daysTillNow / 30);
+                                    itemCurrentCost = months * rate * qty;
+                                } else {
+                                    // Daily
+                                    itemCurrentCost = daysTillNow * rate * qty;
+                                }
+                                return sum + itemCurrentCost;
+                            }, 0);
+
+                            // Add Logistics
+                            const logisticsCost = (Number(orderData.logistics?.delivery?.charges) || 0) + (Number(orderData.logistics?.return?.charges) || 0);
+                            
+                            // Total Expected till Today
+                            const totalTillToday = currentCost + logisticsCost; // Note: Deposit is usually not "consumed", but user asked for "costs". Refundable deposit is strictly separate.
+                            
+                            // Net Paid
+                            const netPaid = (orderData.financials.totalPaid || 0) - (orderData.financials.totalRefunded || 0);
+                            const currentBalance = totalTillToday - netPaid;
+                            
+                            return (
+                                <div className="mt-4 pt-4 border-t border-white/20">
+                                    <h4 className="font-bold text-white/90 text-sm uppercase flex items-center gap-2">
+                                        <Wallet size={16} /> Cost Till Today ({today.toLocaleDateString()})
+                                    </h4>
+                                    <div className="flex justify-between items-end mt-1">
+                                        <div className="text-right flex-1">
+                                            <div className="text-xs text-blue-200">Usage + Logistics</div>
+                                            <div className="font-bold text-xl">₹{totalTillToday.toLocaleString()}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center mt-3 bg-white/10 p-2 rounded-lg">
+                                        <span className="text-xs font-bold text-blue-100">Net Due Now</span>
+                                        <span className={`text-lg font-black ${currentBalance > 0 ? 'text-amber-300' : 'text-green-300'}`}>
+                                            {currentBalance > 0 ? `To Pay: ₹${currentBalance.toLocaleString()}` : `Credit: ₹${Math.abs(currentBalance).toLocaleString()}`}
+                                        </span>
+                                    </div>
+                                    <p className="text-[10px] text-blue-200 mt-1 italic leading-tight">
+                                        * Calculated based on elapsed days, applying weekly ceiling/extra rules. Excludes deposit.
+                                    </p>
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
             </div>
