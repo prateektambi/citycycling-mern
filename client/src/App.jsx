@@ -24,6 +24,7 @@ import ResetPassword from './pages/ResetPassword';
 import UserProfile from './pages/UserProfile';
 import MyOrders from './pages/MyOrders';
 import AdminProtectedRoute from './components/AdminProtectedRoutes';
+import Analytics from './components/Analytics';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
 import Unauthorized from './pages/Unauthorized';
@@ -32,8 +33,9 @@ import './styles/App.css';
 
 function App() {
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       <ScrollToTop />
+      <Analytics />
       <Header />
       <Routes>
         <Route path="/" element={<HomePage />} />
