@@ -39,6 +39,16 @@ const authService = {
   updateProfile: async (profileData) => {
     const response = await API.put('/api/auth/profile', profileData);
     return response.data;
+  },
+
+  googleAuth: async (credential) => {
+    const response = await API.post('/api/auth/google', { credential });
+    return response.data;
+  },
+
+  linkedinAuth: async (code, redirectUri) => {
+    const response = await API.post('/api/auth/linkedin', { code, redirectUri });
+    return response.data;
   }
 };
 

@@ -29,6 +29,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
 import Unauthorized from './pages/Unauthorized';
 import ScrollToTop from './components/ScrollToTop';
+import GoogleOneTap from './components/GoogleOneTap';
+import { LinkedInCallback } from './components/LinkedInAuth';
 import './styles/App.css';
 
 function App() {
@@ -36,6 +38,7 @@ function App() {
     <div className="flex flex-col min-h-screen">
       <ScrollToTop />
       <Analytics />
+      <GoogleOneTap />
       <Header />
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -49,6 +52,7 @@ function App() {
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/auth/linkedin/callback" element={<LinkedInCallback />} />
         
         {/* Protected User Routes */}
         <Route 

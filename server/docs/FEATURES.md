@@ -54,6 +54,9 @@ Web interface for end-users.
 
 ### 2. Authentication
 *   **Secure Access**: JWT-based authentication.
+*   **Social Login**:
+    *   **Google**: One Tap popup + button on login/register pages.
+    *   **LinkedIn**: OAuth 2.0 with OpenID Connect.
 *   **Email Verification**: Token-based email proof.
 *   **Password Management**: Forgot/Reset password flows via email.
 

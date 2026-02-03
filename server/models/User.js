@@ -11,8 +11,14 @@ const userSchema = new mongoose.Schema({
   },
   password: { 
     type: String, 
-    required: true 
+    required: function() { return this.authProvider === 'local'; } // Only required for local auth
   },
+  authProvider: {
+    type: String,
+    enum: ['local', 'google', 'facebook', 'apple', 'linkedin'],
+    default: 'local'
+  },
+  socialId: { type: String }, // Provider-specific user ID
   role: { 
     type: String, 
     enum: ['user', 'admin'], 

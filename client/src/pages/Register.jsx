@@ -3,6 +3,8 @@ import { AuthContext } from '../context/AuthContext';
 import authService from '../services/authService';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, Phone, ArrowRight, CheckCircle, Loader } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
+import { LinkedInLoginButton } from '../components/LinkedInAuth';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -23,6 +25,21 @@ const Register = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     // Clear error when user types
     if (error) setError('');
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await authService.googleAuth(credentialResponse.credential);
+      login(data);
+      navigate('/');
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || "Google signup failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -99,6 +116,29 @@ const Register = () => {
               {error}
             </div>
           )}
+
+          {/* Social Signup Buttons */}
+          <div className="space-y-3 mb-6">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError('Google signup failed')}
+              width="100%"
+              theme="outline"
+              size="large"
+              text="signup_with"
+            />
+            <LinkedInLoginButton onError={setError} />
+          </div>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-gray-400 font-medium">or register with email</span>
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">

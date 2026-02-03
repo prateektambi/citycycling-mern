@@ -3,6 +3,8 @@ import { AuthContext } from '../context/AuthContext';
 import authService from '../services/authService';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Loader } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
+import { LinkedInLoginButton } from '../components/LinkedInAuth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -35,6 +37,25 @@ const Login = () => {
     }
   };
 
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await authService.googleAuth(credentialResponse.credential);
+      login(data);
+      if (data.role === 'admin') {
+        navigate('/admin/orders');
+      } else {
+        navigate('/');
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || "Google login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-300">
@@ -52,6 +73,29 @@ const Login = () => {
               {error}
             </div>
           )}
+
+          {/* Social Login Buttons */}
+          <div className="space-y-3 mb-6">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError('Google login failed')}
+              width="100%"
+              theme="outline"
+              size="large"
+              text="signin_with"
+            />
+            <LinkedInLoginButton onError={setError} />
+          </div>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-gray-400 font-medium">or continue with email</span>
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
