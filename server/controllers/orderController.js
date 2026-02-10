@@ -1,5 +1,6 @@
 const Order = require('../models/Order');
 const User = require('../models/User');
+const Product = require('../models/Product');
 const mongoose = require('mongoose');
 const { isTotalStockAvailable } = require('../utils/availability');
 const { updateProductAvailability } = require('../utils/availabilityUpdater');
@@ -13,7 +14,12 @@ exports.createOrder = async (req, res) => {
     session.startTransaction();
 
     try {
-        const { customer, bookings, logistics, initialPayment } = req.body;
+        let { customer, bookings, logistics, initialPayment } = req.body;
+
+        // Filter out empty bookings (e.g. empty product ID)
+        if (bookings && Array.isArray(bookings)) {
+            bookings = bookings.filter(b => b.product && b.product.trim() !== '');
+        }
 
         if (!bookings || !Array.isArray(bookings) || bookings.length === 0) {
             throw new Error("Order must contain at least one booking.");
@@ -36,7 +42,9 @@ exports.createOrder = async (req, res) => {
             );
             if (!available) {
                 console.error(`Stock unavailable for product: ${productId}`);
-                throw new Error(`Stock unavailable for product ${productId} on requested dates.`);
+                const product = await Product.findById(productId).select('name size');
+                const pName = product ? `${product.name} (${product.size})` : productId;
+                throw new Error(`Stock unavailable for ${pName} on requested dates.`);
             }
         }
 
@@ -200,8 +208,13 @@ exports.updateOrder = async (req, res) => {
     session.startTransaction();
     
     try {
-        const { customer, bookings, logistics, financials } = req.body;
+        let { customer, bookings, logistics, financials } = req.body;
         const orderIdStr = req.params.id; // e.g., ORD-123456
+
+        // Filter out empty bookings
+        if (bookings && Array.isArray(bookings)) {
+            bookings = bookings.filter(b => b.product && b.product.trim() !== '');
+        }
 
         console.log(`[updateOrder] Payload Data:`, JSON.stringify({
             customer: customer?.name,
@@ -242,7 +255,9 @@ exports.updateOrder = async (req, res) => {
             );
             if (!available) {
                 console.error(`[updateOrder] Stock unavailable for product: ${productId}`);
-                throw new Error(`Stock unavailable for product ${productId} on requested dates.`);
+                const product = await Product.findById(productId).select('name size');
+                const pName = product ? `${product.name} (${product.size})` : productId;
+                throw new Error(`Stock unavailable for ${pName} on requested dates.`);
             }
         }
         console.log(`[updateOrder] Availability checks passed.`);

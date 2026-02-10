@@ -38,6 +38,7 @@ The availability map is recalculated ("repaired") automatically in the following
 *   **Order Update (`orderController.js`):**
     *   Validation: Checks availability for new dates/quantities, excluding the current order's previous state.
     *   Update: Triggers recalculation for all products involved in the order (both old and new).
+        *   **Note**: Toggling the `isLastDayAvailable` field on an existing order counts as an update and will immediately trigger this recalculation, updating the map to reflect the freed-up days.
 *   **Order Cancellation (`orderController.js`):**
     *   Action: Sets order status to `Cancelled` and releases inventory.
     *   Update: Triggers recalculation to restore availability.
