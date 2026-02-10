@@ -46,6 +46,11 @@ const OrderSchema = new mongoose.Schema({
             day4: { type: Number, default: 0 },
             day5: { type: Number, default: 0 },
             day6: { type: Number, default: 0 }
+        },
+        isLastDayAvailable: {
+            type: Boolean,
+            default: true,
+            description: "If true, the end date is not counted as occupied, allowing same-day booking."
         }
     }],
 

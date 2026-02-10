@@ -152,13 +152,14 @@ const CreateOrder = () => {
         const today = new Date().toISOString().split('T')[0];
         setOrderData(prev => ({
             ...prev,
-            bookings: [...prev.bookings, {
+            bookings: [{
                 product: '', productCode: '', name: '', quantity: 1, 
                 startDate: today, endDate: today, 
                 rentalType: 'Daily', appliedRate: 0, securityDeposit: 0,
                 unitsCharged: 0, durationDays: 0,
+                isLastDayAvailable: true,
                 weeklyExtraRates: { day1: 0, day2: 0, day3: 0, day4: 0, day5: 0, day6: 0 }
-            }]
+            }, ...prev.bookings]
         }));
     };
 
@@ -375,10 +376,21 @@ const CreateOrder = () => {
                                     {/* Dates */}
                                     <div className="lg:col-span-4">
                                         <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Duration</label>
-                                        <div className="flex items-center gap-2">
-                                            <input type="date" value={item.startDate} className="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" onChange={(e) => updateBookingField(idx, 'startDate', e.target.value)} />
-                                            <span className="text-gray-300">-</span>
-                                            <input type="date" value={item.endDate} className="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" onChange={(e) => updateBookingField(idx, 'endDate', e.target.value)} />
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <input type="date" value={item.startDate} className="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" onChange={(e) => updateBookingField(idx, 'startDate', e.target.value)} />
+                                                <span className="text-gray-300">-</span>
+                                                <input type="date" value={item.endDate} className="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" onChange={(e) => updateBookingField(idx, 'endDate', e.target.value)} />
+                                            </div>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={item.isLastDayAvailable || false}
+                                                    onChange={(e) => updateBookingField(idx, 'isLastDayAvailable', e.target.checked)}
+                                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
+                                                />
+                                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Free up Return Date?</span>
+                                            </label>
                                         </div>
                                     </div>
                                     

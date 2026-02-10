@@ -44,10 +44,13 @@ const isTotalStockAvailable = async (productId, requestedBookings, excludeOrderI
         // Sum DB occupancy
         existingOrders.forEach(order => {
             order.bookings.forEach(b => {
+                const bookingEnd = new Date(b.endDate);
+                if (b.isLastDayAvailable) bookingEnd.setDate(bookingEnd.getDate() - 1);
+
                 if (b.product.toString() === productId.toString() &&
                     b.bookingStatus !== 'Cancelled' &&
                     new Date(b.startDate) <= currentDay && 
-                    new Date(b.endDate) >= currentDay) {
+                    bookingEnd >= currentDay) {
                     dailyOccupancy += b.quantity;
                 }
             });
@@ -55,8 +58,11 @@ const isTotalStockAvailable = async (productId, requestedBookings, excludeOrderI
 
         // Sum New Requested occupancy
         requestedBookings.forEach(b => {
+            const bookingEnd = new Date(b.endDate);
+            if (b.isLastDayAvailable) bookingEnd.setDate(bookingEnd.getDate() - 1);
+
             if (new Date(b.startDate) <= currentDay && 
-                new Date(b.endDate) >= currentDay) {
+                bookingEnd >= currentDay) {
                 dailyOccupancy += b.quantity;
             }
         });

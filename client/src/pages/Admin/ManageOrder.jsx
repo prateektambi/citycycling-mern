@@ -243,7 +243,7 @@ const ManageOrder = () => {
             ...prev,
             financials: {
                 ...prev.financials,
-                paymentHistory: [...prev.financials.paymentHistory, { ...newPayment, amount: Number(newPayment.amount) }]
+                paymentHistory: [{ ...newPayment, amount: Number(newPayment.amount) }, ...prev.financials.paymentHistory]
             }
         }));
         setNewPayment({ amount: '', method: 'UPI', transactionId: '', date: new Date().toISOString().split('T')[0], note: '' });
@@ -255,7 +255,7 @@ const ManageOrder = () => {
             ...prev,
             financials: {
                 ...prev.financials,
-                refundHistory: [...prev.financials.refundHistory, { ...newRefund, amount: Number(newRefund.amount) }]
+                refundHistory: [{ ...newRefund, amount: Number(newRefund.amount) }, ...prev.financials.refundHistory]
             }
         }));
         setNewRefund({ amount: '', method: 'UPI', transactionId: '', date: new Date().toISOString().split('T')[0], note: '' });
@@ -552,7 +552,7 @@ const ManageOrder = () => {
                                 <span className="text-xs font-black text-gray-500 uppercase tracking-widest group-hover:text-blue-600 transition-colors">Split/Bridge Pricing</span>
                             </label>
                             <button 
-                                onClick={() => setOrderData({...orderData, bookings: [...orderData.bookings, { product: '', quantity: 1, startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0], rentalType: 'Daily', appliedRate: 0, securityDeposit: 0, weeklyExtraRates: { day1: 0, day2: 0, day3: 0, day4: 0, day5: 0, day6: 0 } }]})}
+                                onClick={() => setOrderData({...orderData, bookings: [{ product: '', quantity: 1, startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0], rentalType: 'Daily', appliedRate: 0, securityDeposit: 0, isLastDayAvailable: true, weeklyExtraRates: { day1: 0, day2: 0, day3: 0, day4: 0, day5: 0, day6: 0 } }, ...orderData.bookings]})}
                                 className="bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2"
                             >
                                 <Plus size={14}/> Add Bike
@@ -602,6 +602,15 @@ const ManageOrder = () => {
                                         <input type="date" value={item.startDate} className="border p-3 rounded-xl text-xs" onChange={(e) => updateBookingField(idx, 'startDate', e.target.value)} />
                                         <input type="date" value={item.endDate} className="border p-3 rounded-xl text-xs" onChange={(e) => updateBookingField(idx, 'endDate', e.target.value)} />
                                     </div>
+                                    <label className="flex items-center gap-2 cursor-pointer pt-1">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={item.isLastDayAvailable || false}
+                                            onChange={(e) => updateBookingField(idx, 'isLastDayAvailable', e.target.checked)}
+                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
+                                        />
+                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Free up Return Date?</span>
+                                    </label>
                                     <div className="p-3 bg-blue-50 rounded-xl text-blue-600 space-y-1">
                                         <div className="flex justify-between text-xs font-bold">
                                             <span>Duration:</span>

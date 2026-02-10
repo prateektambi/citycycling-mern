@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { productService } from '../services/productService';
-import { Filter, X, Search, Bike, ChevronDown, Calendar, ArrowRight, SlidersHorizontal, Users, Star } from 'lucide-react';
+import { Filter, X, Search, Bike, ChevronDown, Calendar, ArrowRight, Users, Star } from 'lucide-react';
 
 const bikeTypes = ['MTB', 'Road Bike', 'Hybrid', 'Electric', 'Kids 3 To 6 Years', 'Kids 6 To 10 Years'];
 
@@ -14,12 +14,12 @@ const Catalogue = () => {
     // --- Filter States ---
     const [selectedTypes, setSelectedTypes] = useState(() => {
         const types = searchParams.get('types');
-        return types ? types.split(',') : bikeTypes;
+        return types ? types.split(',') : [];
     });
     const [heightFt, setHeightFt] = useState(searchParams.get('heightFt') || '');
     const [heightIn, setHeightIn] = useState(searchParams.get('heightIn') || '');
     const [availabilityFilter, setAvailabilityFilter] = useState(searchParams.get('availability') || 'all'); 
-    const [showMobileFilters, setShowMobileFilters] = useState(false);
+
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -39,8 +39,7 @@ const Catalogue = () => {
     // Sync filters to URL
     useEffect(() => {
         const params = new URLSearchParams();
-        const isAllTypesSelected = selectedTypes.length === bikeTypes.length && selectedTypes.every(t => bikeTypes.includes(t));
-        if (!isAllTypesSelected && selectedTypes.length > 0) {
+        if (selectedTypes.length > 0) {
             params.set('types', selectedTypes.join(','));
         }
         if (heightFt) params.set('heightFt', heightFt);
@@ -121,7 +120,7 @@ const Catalogue = () => {
     };
 
     const clearFilters = () => {
-        setSelectedTypes(bikeTypes);
+        setSelectedTypes([]);
         setHeightFt('');
         setHeightIn('');
         setAvailabilityFilter('all');
@@ -140,34 +139,18 @@ const Catalogue = () => {
 
     return (
         <div className="bg-white min-h-screen pb-20">
-            {/* Vibrant Hero Section */}
             <div className="bg-gradient-to-br from-blue-50 to-white border-b overflow-hidden">
-                <div className="max-w-7xl mx-auto px-6 py-12 md:py-24 flex flex-col md:flex-row items-center gap-12 text-center md:text-left">
-                    <div className="flex-1 space-y-8">
-                        <span className="inline-block bg-blue-600 text-white text-xs font-black uppercase tracking-[0.3em] px-5 py-2 rounded-full shadow-lg shadow-blue-100">
-                            Our Premium Fleet
-                        </span>
+                <div className="max-w-7xl mx-auto px-6 py-12 md:py-24 flex flex-col items-center text-center">
+                    <div className="space-y-8">
                         <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tight leading-[1.05] uppercase">
                             Discover Your <br/>
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">Perfect Ride.</span>
                         </h1>
-                        <p className="text-gray-600 text-xl font-medium max-w-lg mx-auto md:mx-0 leading-relaxed">
-                            Premium cycles professionally maintained for your Bangalore adventures. Fast, secure, and purely joyful.
-                        </p>
-                    </div>
-                    <div className="flex-1 relative">
-                        <div className="absolute -inset-10 bg-blue-400/10 rounded-full blur-[80px]"></div>
-                        <img 
-                            src="/images/catalogue-hero.png" 
-                            alt="Bicycle collection" 
-                            className="relative z-10 w-full rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.1)] hover:scale-105 transition-transform duration-700"
-                        />
                     </div>
                 </div>
             </div>
 
-            {/* Sticky Filter Bar (Vibrant & Legible) */}
-            <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm">
+            <div className="lg:sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm">
                 <div className="max-w-7xl mx-auto px-6 py-5">
                     <div className="flex items-center justify-between gap-6">
                         <div className="hidden lg:flex items-center gap-10">
@@ -178,7 +161,7 @@ const Catalogue = () => {
                                     {bikeTypes.map(type => (
                                         <button 
                                             key={type}
-                                            onClick={() => setSelectedTypes(prev => prev.includes(type) ? (prev.length > 1 ? prev.filter(t => t !== type) : prev) : [...prev, type])}
+                                            onClick={() => setSelectedTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type])}
                                             className={`px-4 py-2 rounded-xl text-sm font-bold transition-all border-2 ${
                                                 selectedTypes.includes(type) ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-white border-gray-100 text-gray-600 hover:border-blue-200'
                                             }`}
@@ -241,18 +224,6 @@ const Catalogue = () => {
                             </div>
                         </div>
 
-                        {/* Mobile Filter Toggle */}
-                        <button 
-                            onClick={() => setShowMobileFilters(!showMobileFilters)}
-                            className="lg:hidden flex items-center gap-2 bg-white border-2 border-gray-100 px-5 py-3 rounded-2xl text-sm font-bold text-gray-700 active:scale-95 transition-transform"
-                        >
-                            <SlidersHorizontal size={18} />
-                            Filters
-                            {(selectedTypes.length !== bikeTypes.length || heightFt || availabilityFilter !== 'all') && (
-                                <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
-                            )}
-                        </button>
-
                         <button 
                             onClick={clearFilters}
                             className="text-sm font-black text-blue-600 hover:text-blue-700 flex items-center gap-1 group"
@@ -263,75 +234,65 @@ const Catalogue = () => {
                     </div>
                 </div>
 
-                {/* Mobile Filters Panel */}
-                {showMobileFilters && (
-                    <div className="lg:hidden bg-white border-t p-8 space-y-10 animate-in slide-in-from-top duration-500">
-                        <div className="space-y-4">
-                            <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Select Bike Types</span>
-                            <div className="flex flex-wrap gap-3">
-                                {bikeTypes.map(type => (
-                                    <button 
-                                        key={type}
-                                        onClick={() => setSelectedTypes(prev => prev.includes(type) ? (prev.length > 1 ? prev.filter(t => t !== type) : prev) : [...prev, type])}
-                                        className={`px-5 py-3 rounded-2xl text-sm font-bold transition-all border-2 ${
-                                            selectedTypes.includes(type) ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-white border-gray-100 text-gray-600'
-                                        }`}
-                                    >
-                                        {type}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Rider Height</span>
-                                <select 
-                                    className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-blue-400 transition-colors"
-                                    value={heightFt}
-                                    onChange={(e) => setHeightFt(e.target.value)}
+                <div className="lg:hidden bg-white border-t p-8 space-y-10">
+                    <div className="space-y-4">
+                        <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Select Bike Types</span>
+                        <div className="flex flex-wrap gap-3">
+                            {bikeTypes.map(type => (
+                                <button 
+                                    key={type}
+                                    onClick={() => setSelectedTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type])}
+                                    className={`px-5 py-3 rounded-2xl text-sm font-bold transition-all border-2 ${
+                                        selectedTypes.includes(type) ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-white border-gray-100 text-gray-600'
+                                    }`}
                                 >
-                                    <option value="">Feet</option>
-                                    {[3, 4, 5, 6].map(ft => <option key={ft} value={ft}>{ft} ft</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-4">
-                                <span className="text-xs font-black text-gray-400 uppercase tracking-widest opacity-0">Inches</span>
-                                <select 
-                                    className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-blue-400 transition-colors"
-                                    value={heightIn}
-                                    onChange={(e) => setHeightIn(e.target.value)}
-                                >
-                                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(inch => <option key={inch} value={inch}>{inch} in</option>)}
-                                </select>
-                            </div>
+                                    {type}
+                                </button>
+                            ))}
                         </div>
-                        <div className="space-y-4">
-                            <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Timeframe</span>
-                            <div className="grid grid-cols-3 bg-gray-50 p-2 rounded-[2rem] border-2 border-gray-100">
-                                {['all', 'today', 'weekend'].map(opt => (
-                                    <button 
-                                        key={opt}
-                                        onClick={() => {
-                                            setAvailabilityFilter(opt);
-                                            setShowMobileFilters(false);
-                                        }}
-                                        className={`py-3 rounded-2xl text-xs font-black uppercase transition-all ${
-                                            availabilityFilter === opt ? 'bg-white text-blue-600 shadow-md' : 'text-gray-500'
-                                        }`}
-                                    >
-                                        {opt === 'today' ? 'Now' : opt}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <button 
-                            onClick={() => setShowMobileFilters(false)}
-                            className="w-full bg-blue-600 text-white py-5 rounded-[2rem] font-black uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 transition-all"
-                        >
-                            Apply Filters
-                        </button>
                     </div>
-                )}
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Rider Height</span>
+                            <select 
+                                className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-blue-400 transition-colors"
+                                value={heightFt}
+                                onChange={(e) => setHeightFt(e.target.value)}
+                            >
+                                <option value="">Feet</option>
+                                {[3, 4, 5, 6].map(ft => <option key={ft} value={ft}>{ft} ft</option>)}
+                            </select>
+                        </div>
+                        <div className="space-y-4">
+                            <span className="text-xs font-black text-gray-400 uppercase tracking-widest opacity-0">Inches</span>
+                            <select 
+                                className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:border-blue-400 transition-colors"
+                                value={heightIn}
+                                onChange={(e) => setHeightIn(e.target.value)}
+                            >
+                                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(inch => <option key={inch} value={inch}>{inch} in</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Timeframe</span>
+                        <div className="grid grid-cols-3 bg-gray-50 p-2 rounded-[2rem] border-2 border-gray-100">
+                            {['all', 'today', 'weekend'].map(opt => (
+                                <button 
+                                    key={opt}
+                                    onClick={() => {
+                                        setAvailabilityFilter(opt);
+                                    }}
+                                    className={`py-3 rounded-2xl text-xs font-black uppercase transition-all ${
+                                        availabilityFilter === opt ? 'bg-white text-blue-600 shadow-md' : 'text-gray-500'
+                                    }`}
+                                >
+                                    {opt === 'today' ? 'Now' : opt}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Product Grid (Modern & Colorful Cards) */}

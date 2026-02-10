@@ -53,7 +53,14 @@ const updateProductAvailability = async (productId, session) => {
                 const start = new Date(booking.startDate);
                 const end = new Date(booking.endDate);
                 
-                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                // If isLastDayAvailable is true, we consider the bike free on the return date (e.g. returns at 10 AM, rents at 2 PM)
+                // So we do not block the endDate.
+                const effectiveEnd = new Date(end);
+                if (booking.isLastDayAvailable) {
+                    effectiveEnd.setDate(effectiveEnd.getDate() - 1);
+                }
+
+                for (let d = new Date(start); d <= effectiveEnd; d.setDate(d.getDate() + 1)) {
                     const dateString = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                     if (availabilityMap[dateString] !== undefined) {
                         availabilityMap[dateString] -= booking.quantity;
