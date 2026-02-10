@@ -482,15 +482,14 @@ exports.changeOrderState = async (req, res) => {
         // Handle state transition
         await handleStateTransition(order, newState, performedBy, session);
 
-        // If moving from Confirmed/In-Progress to Cancelled, release inventory
-        if (newState === 'Cancelled' && ['On-Hold', 'Confirmed', 'In-Progress'].includes(order.orderStatus)) {
-            const productIds = [...new Set(order.bookings.map(b => b.product.toString()))];
-            productIds.forEach(productId => {
-                updateProductAvailability(productId).catch(err => {
-                    console.error(`[BACKGROUND_ERROR] Failed to update availability:`, err);
-                });
+        // ALWAYS trigger availability update for any state change
+        // This ensures moving to Returned, Completed, or even In-Progress always refreshes the map
+        const productIds = [...new Set(order.bookings.map(b => b.product.toString()))];
+        productIds.forEach(productId => {
+            updateProductAvailability(productId).catch(err => {
+                console.error(`[BACKGROUND_ERROR] Failed to update availability:`, err);
             });
-        }
+        });
 
         await order.save({ session });
         await session.commitTransaction();
