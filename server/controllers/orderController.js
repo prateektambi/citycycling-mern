@@ -392,10 +392,7 @@ async function handleStateTransition(order, newState, performedBy = 'Admin', ses
             break;
 
         case 'In-Progress':
-            // Ensure it's confirmed first
-            if (oldState !== 'Confirmed') {
-                throw new Error('Can only move to In-Progress from Confirmed state');
-            }
+            // Removed: Ensure it's confirmed first check
             
             // Remove operational tags
             order.removeTag('Prepped', performedBy);
@@ -406,10 +403,7 @@ async function handleStateTransition(order, newState, performedBy = 'Admin', ses
             break;
 
         case 'Returned':
-            // Physical return happened
-            if (oldState !== 'In-Progress') {
-                throw new Error('Can only mark as Returned from In-Progress state');
-            }
+            // Removed: Physical return happened check
             
             // Check if overdue and auto-tag
             const now = new Date();
