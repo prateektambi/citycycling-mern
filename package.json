@@ -6,6 +6,7 @@
     "mongoose": "^9.0.0"
   },
   "scripts": {
-  "seed": "node seeder.js"
+    "seed": "node seeder.js",
+    "deploy": "node deploy.js"
   }
 }
