@@ -6,14 +6,7 @@ import {
 import { productService } from '../../services/productService';
 import { orderService } from '../../services/orderService';
 
-const ALLOWED_TRANSITIONS = {
-    'On-Hold': ['Confirmed', 'Cancelled'],
-    'Confirmed': ['In-Progress', 'Cancelled'],
-    'In-Progress': ['Returned', 'Cancelled'],
-    'Returned': ['Completed', 'Cancelled'],
-    'Cancelled': ['On-Hold'],
-    'Completed': ['On-Hold']
-};
+const ALL_STATUSES = ['On-Hold', 'Confirmed', 'In-Progress', 'Returned', 'Completed', 'Cancelled'];
 
 const AVAILABLE_TAGS = [
     'Prepped', 'Delivery-Pending', 'Awaiting-Customer-Pickup', 'Pending-Return-Pickup', // Ops
@@ -428,21 +421,13 @@ const ManageOrder = () => {
                                 }}
                             >
                                 <option value="">Move to...</option>
-                                {(() => {
-                                    const allowedTransitions = ALLOWED_TRANSITIONS[orderData.orderStatus] || [];
-                                    const transitions = [...allowedTransitions];
-                                    
-                                    // Always add 'On-Hold' as fallback if not already present and not current state
-                                    if (orderData.orderStatus !== 'On-Hold' && !transitions.includes('On-Hold')) {
-                                        transitions.push('On-Hold');
-                                    }
-                                    
-                                    return transitions.map(nextState => (
+                                {ALL_STATUSES
+                                    .filter(status => status !== orderData.orderStatus)
+                                    .map(nextState => (
                                         <option key={nextState} value={nextState}>
                                             {nextState}
                                         </option>
-                                    ));
-                                })()}
+                                    ))}
                             </select>
                         </div>
                     </div>
