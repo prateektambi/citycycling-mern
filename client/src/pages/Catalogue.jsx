@@ -308,54 +308,142 @@ const Catalogue = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10 md:gap-12">
-                    {filteredProducts.map(product => (
-                        <Link to={`/product/${product.slug}`} key={product._id} className="group flex flex-col h-full bg-white rounded-[3rem] border-2 border-gray-50 overflow-hidden hover:shadow-[0_50px_100px_rgba(0,0,0,0.12)] hover:border-blue-100 hover:-translate-y-2 transition-all duration-500">
-                            <div className="relative aspect-[5/4] overflow-hidden bg-gray-50">
-                                {product.imageUrls && product.imageUrls.length > 0 ? (
-                                    <img 
-                                        src={getImageUrl(product.imageUrls[0])} 
-                                        alt={product.name} 
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-200">
-                                        <Bike size={60} />
-                                    </div>
-                                )}
-                                <div className="absolute top-6 right-6 bg-white/95 backdrop-blur-md px-4 py-2 rounded-2xl text-[10px] font-black text-gray-900 shadow-xl border border-white/50 uppercase tracking-widest leading-none">
-                                    {product.type}
-                                </div>
-                            </div>
-                            
-                            <div className="p-10 flex flex-col flex-1 space-y-6">
-                                <h3 className="text-xl font-black text-gray-900 tracking-tight leading-tight uppercase group-hover:text-blue-600 transition-colors">
-                                    {product.name}
-                                </h3>
-                                
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-gray-50 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-700 uppercase tracking-widest border border-gray-100 flex items-center gap-2">
-                                        <Users size={14}/> Size: {product.size}
-                                    </div>
-                                </div>
+                    {filteredProducts.map(product => {
+                        // Define distinct, elegant color themes for each bike type (Cool & Premium Palette)
+                        const typeThemes = {
+                            'MTB': {
+                                bg: 'from-slate-50 to-gray-50/30',
+                                border: 'group-hover:border-slate-300',
+                                text: 'text-slate-800',
+                                badge: 'bg-slate-50/80 text-slate-700 border-slate-200',
+                                accent: 'text-slate-700',
+                                icon: 'bg-slate-50 group-hover:bg-slate-700 group-hover:text-white group-hover:shadow-slate-200',
+                                shadow: 'hover:shadow-[0_20px_40px_-15px_rgba(71,85,105,0.15)]' // Slate tint
+                            },
+                            'Road Bike': {
+                                bg: 'from-sky-50 to-blue-50/30',
+                                border: 'group-hover:border-sky-300',
+                                text: 'text-sky-900',
+                                badge: 'bg-sky-50/80 text-sky-700 border-sky-200',
+                                accent: 'text-sky-700',
+                                icon: 'bg-sky-50 group-hover:bg-sky-600 group-hover:text-white group-hover:shadow-sky-200',
+                                shadow: 'hover:shadow-[0_20px_40px_-15px_rgba(14,165,233,0.15)]' // Sky tint
+                            },
+                            'Hybrid': {
+                                bg: 'from-cyan-50 to-teal-50/30',
+                                border: 'group-hover:border-cyan-300',
+                                text: 'text-cyan-900',
+                                badge: 'bg-cyan-50/80 text-cyan-700 border-cyan-200',
+                                accent: 'text-cyan-700',
+                                icon: 'bg-cyan-50 group-hover:bg-cyan-600 group-hover:text-white group-hover:shadow-cyan-200',
+                                shadow: 'hover:shadow-[0_20px_40px_-15px_rgba(6,182,212,0.15)]' // Cyan tint
+                            },
+                            'Electric': {
+                                bg: 'from-indigo-50 to-blue-50/30',
+                                border: 'group-hover:border-indigo-300',
+                                text: 'text-indigo-900',
+                                badge: 'bg-indigo-50/80 text-indigo-700 border-indigo-200',
+                                accent: 'text-indigo-700',
+                                icon: 'bg-indigo-50 group-hover:bg-indigo-600 group-hover:text-white group-hover:shadow-indigo-200',
+                                shadow: 'hover:shadow-[0_20px_40px_-15px_rgba(99,102,241,0.15)]' // Indigo tint
+                            },
+                            'Kids 3 To 6 Years': {
+                                bg: 'from-teal-50 to-emerald-50/30',
+                                border: 'group-hover:border-teal-300',
+                                text: 'text-teal-900',
+                                badge: 'bg-teal-50/80 text-teal-700 border-teal-200',
+                                accent: 'text-teal-700',
+                                icon: 'bg-teal-50 group-hover:bg-teal-600 group-hover:text-white group-hover:shadow-teal-200',
+                                shadow: 'hover:shadow-[0_20px_40px_-15px_rgba(20,184,166,0.15)]' // Teal tint
+                            },
+                            'Kids 6 To 10 Years': {
+                                bg: 'from-teal-50 to-emerald-50/30',
+                                border: 'group-hover:border-teal-300',
+                                text: 'text-teal-900',
+                                badge: 'bg-teal-50/80 text-teal-700 border-teal-200',
+                                accent: 'text-teal-700',
+                                icon: 'bg-teal-50 group-hover:bg-teal-600 group-hover:text-white group-hover:shadow-teal-200',
+                                shadow: 'hover:shadow-[0_20px_40px_-15px_rgba(20,184,166,0.15)]' // Teal tint
+                            }
+                        };
 
-                                <div className="pt-6 border-t border-gray-50 mt-auto flex items-center justify-between">
-                                    <div className="space-y-3">
-                                        <div className="space-y-1">
-                                            <div className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] leading-none">Daily Rate</div>
-                                            <div className="text-xl font-black text-gray-900 leading-none">₹{product.dailyRate}<span className="text-[10px] text-gray-400 font-bold ml-1">/DAY</span></div>
+                        const defaultTheme = {
+                            bg: 'from-gray-50 to-slate-50/30',
+                            border: 'group-hover:border-gray-200',
+                            text: 'text-gray-900',
+                            badge: 'bg-gray-50/80 text-gray-700 border-gray-100',
+                            accent: 'text-gray-600',
+                            icon: 'bg-gray-50 group-hover:bg-gray-800 group-hover:text-white group-hover:shadow-gray-200',
+                            shadow: 'hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)]'
+                        };
+
+                        const theme = typeThemes[product.type] || defaultTheme;
+
+                        return (
+                            <Link 
+                                to={`/product/${product.slug}`} 
+                                key={product._id} 
+                                className={`group flex flex-col h-full bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden hover:-translate-y-2 transition-all duration-500 relative ${theme.border} ${theme.shadow}`}
+                            >
+                                {/* Image Container with Subtle Gradient Background */}
+                                <div className={`relative aspect-[5/4] overflow-hidden bg-gradient-to-br ${theme.bg} p-6`}>
+                                    {product.imageUrls && product.imageUrls.length > 0 ? (
+                                        <img 
+                                            src={getImageUrl(product.imageUrls[0])} 
+                                            alt={product.name} 
+                                            className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-700 ease-out drop-shadow-sm"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                            <Bike size={60} strokeWidth={1.5} />
                                         </div>
-                                        <div className="space-y-1">
-                                            <div className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em] leading-none">Weekly Saver</div>
-                                            <div className="text-md font-black text-emerald-600 leading-none">₹{product.weeklyRate}<span className="text-[10px] text-emerald-400 font-bold ml-1">/WEEK</span></div>
-                                        </div>
-                                    </div>
-                                    <div className="w-14 h-14 bg-blue-50 group-hover:bg-blue-600 group-hover:text-white rounded-[1.5rem] flex items-center justify-center transition-all duration-300 shadow-inner group-hover:shadow-blue-200 group-hover:shadow-xl self-end">
-                                        <ArrowRight size={24} />
+                                    )}
+                                    
+                                    {/* Elegant Backdrop Badge */}
+                                    <div className={`absolute top-4 right-4 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border backdrop-blur-sm shadow-sm ${theme.badge}`}>
+                                        {product.type}
                                     </div>
                                 </div>
-                            </div>
-                        </Link>
-                    ))}
+                                
+                                <div className="p-8 flex flex-col flex-1 gap-6">
+                                    <div className="space-y-2">
+                                        <h3 className={`text-lg font-bold tracking-tight leading-tight uppercase ${theme.text}`}>
+                                            {product.name}
+                                        </h3>
+                                        <div className="flex items-center gap-2">
+                                            <div className="bg-gray-50 px-2.5 py-1 rounded-lg text-[10px] font-bold text-gray-500 uppercase tracking-wider border border-gray-100 flex items-center gap-1.5">
+                                                <Users size={12}/> {product.size}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-auto border-t border-gray-50 pt-5 flex items-end justify-between">
+
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex items-baseline gap-1">
+                                                <div className={`text-lg font-black leading-none ${theme.accent}`}>
+                                                    ₹{product.dailyRate}
+                                                </div>
+                                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">/ day</div>
+                                            </div>
+                                            {product.weeklyRate && (
+                                                <div className="flex items-baseline gap-1">
+                                                    <div className={`text-lg font-black leading-none ${theme.text}`}>
+                                                        ₹{product.weeklyRate}
+                                                    </div>
+                                                    <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">/ week</div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm ${theme.icon}`}>
+                                            <ArrowRight size={20} strokeWidth={2.5} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </Link>
+                        );
+                    })}
                 </div>
 
                 {filteredProducts.length === 0 && (
