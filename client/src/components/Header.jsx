@@ -47,6 +47,7 @@ const Header = () => {
         <nav>
           <ul className="nav-menu">
             <li><NavLink to="/catalogue" className={({isActive}) => isActive ? "active" : ''}>Book Online</NavLink></li>
+            <li><NavLink to="/blog" className={({isActive}) => isActive ? "active" : ''}>Journal</NavLink></li>
             <li><NavLink to="/how-it-works" className={({isActive}) => isActive ? "active" : ''}>How It Works</NavLink></li>
             <li><NavLink to="/leave-request" className={({isActive}) => isActive ? "active" : ''}>Leave a Request</NavLink></li>
           </ul>

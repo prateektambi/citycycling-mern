@@ -6,6 +6,8 @@ import HowItWorks from './pages/HowItWorks';
 import LeaveRequest from './pages/LeaveRequest';
 import Contact from './pages/Contact';
 import Catalogue from './pages/Catalogue';
+import BlogList from './pages/Blog/BlogList';
+import BlogPost from './pages/Blog/BlogPost';
 import ProductPage from './pages/ProductPage';
 import OrderList from './pages/Admin/OrderList';
 import CreateOrder from './pages/Admin/CreateOrder';
@@ -46,6 +48,8 @@ function App() {
         <Route path="/leave-request" element={<LeaveRequest />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/catalogue" element={<Catalogue />} /> 
+        <Route path="/blog" element={<BlogList />} />
+        <Route path="/blog/:slug" element={<BlogPost />} />
         <Route path="/product/:slug" element={<ProductPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

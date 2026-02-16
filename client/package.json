@@ -10,7 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@portabletext/react": "^6.0.2",
     "@react-oauth/google": "^0.13.4",
+    "@sanity/client": "^7.14.1",
+    "@sanity/image-url": "^2.0.3",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
