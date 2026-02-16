@@ -1,0 +1,36 @@
+name: Cycling Event Scraper
+
+on:
+  schedule:
+    # Runs at 02:00 IST (20:30 UTC previous day)
+    - cron: '30 20 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape-and-sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        cd event-scraper
+        pip install -r requirements.txt
+        python -m playwright install chromium
+
+    - name: Run Scraper Agent
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        SANITY_API_TOKEN: ${{ secrets.SANITY_API_TOKEN }}
+        SANITY_PROJECT_ID: ${{ secrets.SANITY_PROJECT_ID }}
+        SANITY_DATASET: ${{ secrets.SANITY_DATASET }}
+      run: |
+        cd event-scraper
+        python main.py
