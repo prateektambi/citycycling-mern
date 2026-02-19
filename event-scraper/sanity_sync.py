@@ -6,12 +6,12 @@ from datetime import datetime
 
 load_dotenv()
 
-PROJECT_ID = os.getenv("SANITY_PROJECT_ID", "bdo5kfci")
-DATASET = os.getenv("SANITY_DATASET", "production")
-API_TOKEN = os.getenv("SANITY_API_TOKEN")
+PROJECT_ID = os.getenv("SANITY_PROJECT_ID", "bdo5kfci").strip()
+DATASET = os.getenv("SANITY_DATASET", "production").strip()
+API_TOKEN = os.getenv("SANITY_API_TOKEN", "").strip()
 
-API_URL = f"https://{PROJECT_ID}.api.sanity.io/v2021-06-07/data/query/{DATASET}"
-MUTATION_URL = f"https://{PROJECT_ID}.api.sanity.io/v2021-06-07/data/mutations/{DATASET}"
+API_URL = f"https://{PROJECT_ID}.api.sanity.io/v2022-03-07/data/query/{DATASET}"
+MUTATION_URL = f"https://{PROJECT_ID}.api.sanity.io/v2022-03-07/data/mutate/{DATASET}"
 
 def check_duplicate(title, published_at):
     """
@@ -101,6 +101,9 @@ def create_post(event_data):
                 'Content-Type': 'application/json'
             }
         )
+        if response.status_code >= 400:
+            print(f"Error Status: {response.status_code}")
+            print(f"Error Body: {response.text}")
         response.raise_for_status()
         print(f"Successfully created post: {event_data['title']}")
         return response.json()

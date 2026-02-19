@@ -15,7 +15,7 @@ genai.configure(api_key=api_key)
 
 # Model setup
 # Using gemini-1.5-pro for best performance on complex extraction
-model = genai.GenerativeModel('gemini-1.5-pro-latest') 
+model = genai.GenerativeModel('gemini-flash-latest') 
 
 def process_data(raw_text):
     """
@@ -53,21 +53,34 @@ def process_data(raw_text):
     {raw_text}
     """
     
-    try:
-        response = model.generate_content(prompt)
-        # Clean response if it contains markdown code blocks
-        text = response.text.strip()
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-            
-        return json.loads(text.strip())
-    except Exception as e:
-        print(f"Error processing with LLM: {e}")
-        return []
+    import time
+    from google.api_core import exceptions
+
+    retries = 3
+    for attempt in range(retries):
+        try:
+            response = model.generate_content(prompt)
+            # Clean response if it contains markdown code blocks
+            text = response.text.strip()
+            if text.startswith("```json"):
+                text = text[7:]
+            if text.startswith("```"):
+                text = text[3:]
+            if text.endswith("```"):
+                text = text[:-3]
+                
+            return json.loads(text.strip())
+        except exceptions.ResourceExhausted as e:
+            print(f"Quota exceeded. Retrying in 60 seconds... (Attempt {attempt + 1}/{retries})")
+            time.sleep(60)
+        except Exception as e:
+            print(f"Error processing with LLM: {e}")
+            if "429" in str(e):
+                 print(f"Quota exceeded (generic error). Retrying in 60 seconds... (Attempt {attempt + 1}/{retries})")
+                 time.sleep(60)
+            else:
+                return []
+    return []
 
 if __name__ == "__main__":
     # Test with dummy data
