@@ -12,6 +12,10 @@ app.use(cors());
 app.use(express.json());
 
 
+// Fix for local DNS SRV resolution issues (ECONNREFUSED)
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 // MongoDB Connection
 mongoose.connect(config.MONGODB_URI);
 const connection = mongoose.connection;
