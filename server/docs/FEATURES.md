@@ -60,8 +60,12 @@ Web interface for end-users.
 *   **Email Verification**: Token-based email proof.
 *   **Password Management**: Forgot/Reset password flows via email.
 
----
+### 3. Community & Content
+*   **Blog/Journal**: Read latest stories, event announcements, and tips.
+    *   Powered by Sanity Headless CMS for rapid content publishing.
+    *   Dynamic rendering with optimized images and modular content blocks.
 
+---
 ## ⚙️ Infrastructure & Tech
 *   **Role-Based Access**: Strict separation between Admin and User capabilities.
 *   **Analytics**: Integrated Google Analytics 4 (GA4) support.

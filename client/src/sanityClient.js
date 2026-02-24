@@ -6,6 +6,7 @@ export const client = createClient({
   dataset: "production", // Your Dataset Name
   useCdn: true, // set to `false` to bypass the edge cache
   apiVersion: "2023-05-03", // use current date (YYYY-MM-DD) to target the latest API version
+  token: import.meta.env.VITE_SANITY_API_TOKEN, // Add token to bypass CORS
 });
 
 const builder = imageUrlBuilder(client);
