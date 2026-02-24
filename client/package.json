@@ -14,11 +14,14 @@
     "@react-oauth/google": "^0.13.4",
     "@sanity/client": "^7.14.1",
     "@sanity/image-url": "^2.0.3",
+    "date-fns": "^4.1.0",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-ga4": "^2.1.0",
-    "react-router-dom": "^7.11.0"
+    "react-helmet-async": "^2.0.5",
+    "react-router-dom": "^7.11.0",
+    "reading-time": "^1.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
