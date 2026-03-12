@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { CartContext } from '../context/CartContext';
 import logo from '../assets/logo.png';
-import { Phone, MessageCircle, User, LogOut, LayoutDashboard, Package } from 'lucide-react';
+import { Phone, MessageCircle, User, LogOut, LayoutDashboard, Package, ShoppingCart } from 'lucide-react';
 import '../styles/Header.css';
 
 const Header = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const { user, logout } = useContext(AuthContext);
+  const { cartCount } = useContext(CartContext);
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
@@ -57,6 +59,16 @@ const Header = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           {!isMobile && renderContactLinks(false)}
           
+          {/* Cart Icon */}
+          <Link to="/cart" className="relative p-2 text-white hover:bg-blue-700/50 rounded-lg transition-colors" aria-label="Cart">
+            <ShoppingCart size={20} />
+            {cartCount > 0 && (
+              <span className="absolute top-0 right-0 bg-orange-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center transform translate-x-1/4 -translate-y-1/4 border-[1.5px] border-[#0a4d9c]">
+                {cartCount}
+              </span>
+            )}
+          </Link>
+
           {/* Auth Section */}
           <div className="auth-section">
             {user ? (

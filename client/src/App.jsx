@@ -25,6 +25,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import UserProfile from './pages/UserProfile';
 import MyOrders from './pages/MyOrders';
+import CartPage from './pages/CartPage';
 import AdminProtectedRoute from './components/AdminProtectedRoutes';
 import Analytics from './components/Analytics';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -73,6 +74,15 @@ function App() {
           element={
             <ProtectedRoute>
               <MyOrders />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/cart" 
+          element={
+            <ProtectedRoute>
+              <CartPage />
             </ProtectedRoute>
           } 
         />
