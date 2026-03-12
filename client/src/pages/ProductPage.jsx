@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, NavLink } from 'react-router-dom';
 import { productService } from '../services/productService';
 import Rating from '../components/Rating';
+import BookingForm from '../components/BookingForm';
 import { 
     ChevronLeft, 
     ChevronRight, 
@@ -290,11 +291,9 @@ const ProductPage = () => {
                             </div>
                         </div>
 
-                        {/* Booking CTA Layout Placeholder */}
-                        <div className="pt-6 space-y-6">
-                            <div className="flex items-center gap-2 text-[10px] text-gray-400 font-black uppercase tracking-widest justify-center sm:justify-start">
-                                <Clock size={12}/> Secure booking processing
-                            </div>
+                        {/* Booking Form */}
+                        <div className="pt-6">
+                            <BookingForm product={product} />
                         </div>
                     </div>
                 </div>

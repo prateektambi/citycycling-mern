@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import authService from '../services/authService';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Loader } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { LinkedInLoginButton } from '../components/LinkedInAuth';
@@ -13,6 +13,8 @@ const Login = () => {
   const [error, setError] = useState('');
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,7 +29,7 @@ const Login = () => {
       if (data.role === 'admin') {
         navigate('/admin/orders');
       } else {
-        navigate('/'); // Regular users go to home
+        navigate(redirectTo || '/'); // Redirect back to product page if came from booking
       }
     } catch (err) {
       console.error(err);
@@ -46,7 +48,7 @@ const Login = () => {
       if (data.role === 'admin') {
         navigate('/admin/orders');
       } else {
-        navigate('/');
+        navigate(redirectTo || '/');
       }
     } catch (err) {
       console.error(err);
