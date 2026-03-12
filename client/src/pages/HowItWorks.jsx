@@ -1,11 +1,58 @@
-import React, { useEffect } from 'react';
-import { Search, Calendar, ShoppingBag, ShieldCheck, Truck, ArrowRight, Phone, MessageCircle, FileText, CreditCard, Store, Clock, MapPin } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Search, Calendar, ShoppingBag, ShieldCheck, Truck, ArrowRight, Phone, MessageCircle, FileText, CreditCard, Store, Clock, MapPin, Package, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import API from '../api/axiosConfig';
 
 const HowItWorks = () => {
     useEffect(() => {
         document.title = 'City Cycling | How It Works';
         window.scrollTo(0, 0);
     }, []);
+
+    // Pincode lookup state
+    const [pincode, setPincode] = useState('');
+    const [lookupResult, setLookupResult] = useState(null); // { areas, slab, cost, pincode } or null
+    const [lookupError, setLookupError] = useState('');
+    const [isLooking, setIsLooking] = useState(false);
+    const [hasSearched, setHasSearched] = useState(false);
+
+    const slabConfig = {
+        "0–5 km":   { color: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500", label: "Nearby" },
+        "5–10 km":  { color: "bg-blue-50 text-blue-700 border-blue-200", dot: "bg-blue-500", label: "Close" },
+        "10–15 km": { color: "bg-violet-50 text-violet-700 border-violet-200", dot: "bg-violet-500", label: "Moderate" },
+        "15–25 km": { color: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500", label: "Far" },
+        "25–35 km": { color: "bg-rose-50 text-rose-700 border-rose-200", dot: "bg-rose-500", label: "Outskirts" },
+    };
+
+    const handleLookup = async (e) => {
+        e.preventDefault();
+        const trimmed = pincode.trim();
+        if (!trimmed || trimmed.length < 6) return;
+
+        setIsLooking(true);
+        setLookupResult(null);
+        setLookupError('');
+        setHasSearched(true);
+
+        try {
+            const { data } = await API.get(`/api/shipping/lookup/${trimmed}`);
+            setLookupResult(data);
+        } catch (err) {
+            if (err.response?.status === 404) {
+                setLookupError('This pincode is not in our delivery zones yet. Please contact us for custom delivery options.');
+            } else {
+                setLookupError('Something went wrong. Please try again.');
+            }
+        } finally {
+            setIsLooking(false);
+        }
+    };
+
+    const handleReset = () => {
+        setPincode('');
+        setLookupResult(null);
+        setLookupError('');
+        setHasSearched(false);
+    };
 
     const steps = [
         {
@@ -148,6 +195,130 @@ const HowItWorks = () => {
                                 className="relative z-10 w-full max-w-lg mx-auto drop-shadow-[0_50px_50px_rgba(0,0,0,0.15)] rounded-[4rem]"
                             />
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Delivery Cost Checker */}
+            <div className="max-w-7xl mx-auto px-6 py-24 md:py-32">
+                <div className="text-center mb-16">
+                    <span className="inline-block bg-orange-100 text-orange-700 text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full mb-6">
+                        Delivery Zones
+                    </span>
+                    <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6 tracking-tight uppercase">Check Delivery Cost</h2>
+                    <p className="text-gray-500 font-medium max-w-2xl mx-auto">
+                        Enter your pincode to instantly find out the delivery charge to your area.
+                    </p>
+                </div>
+
+                {/* Pincode Search Card */}
+                <div className="max-w-xl mx-auto">
+                    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-[0_30px_80px_rgba(0,0,0,0.06)] p-8 md:p-10">
+                        <form onSubmit={handleLookup} className="flex gap-3">
+                            <div className="relative flex-1">
+                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                                    <MapPin className="text-gray-400" size={20} />
+                                </div>
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={6}
+                                    placeholder="Enter 6-digit pincode"
+                                    value={pincode}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '');
+                                        setPincode(val);
+                                        if (hasSearched) {
+                                            setHasSearched(false);
+                                            setLookupResult(null);
+                                            setLookupError('');
+                                        }
+                                    }}
+                                    className="w-full pl-14 pr-4 py-5 bg-gray-50 border border-gray-200 rounded-2xl text-gray-900 placeholder-gray-400 font-bold text-lg tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white transition-all"
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={pincode.trim().length < 6 || isLooking}
+                                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-8 py-5 rounded-2xl font-black transition-all hover:scale-105 disabled:hover:scale-100 flex items-center gap-2 shadow-lg shadow-blue-600/20 disabled:shadow-none"
+                            >
+                                {isLooking ? (
+                                    <Loader2 size={20} className="animate-spin" />
+                                ) : (
+                                    <Search size={20} />
+                                )}
+                                <span className="hidden sm:inline">Check</span>
+                            </button>
+                        </form>
+
+                        {/* Result: Success */}
+                        {lookupResult && (
+                            <div className="mt-8 animate-[fadeIn_0.4s_ease-out]">
+                                <div className={`rounded-2xl border-2 ${slabConfig[lookupResult.slab]?.color || 'bg-gray-50 text-gray-700 border-gray-200'} p-6 md:p-8`}>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <CheckCircle2 size={24} className="text-emerald-500 flex-shrink-0" />
+                                        <p className="font-bold text-gray-900 text-sm">We deliver to your area!</p>
+                                    </div>
+                                    
+                                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+                                        <div className="space-y-2">
+                                            <p className="text-gray-600 text-sm font-medium">{lookupResult.areas}</p>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="font-mono font-bold text-gray-900 bg-white/60 px-3 py-1 rounded-lg text-sm">{lookupResult.pincode}</span>
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-bold ${slabConfig[lookupResult.slab]?.color}`}>
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${slabConfig[lookupResult.slab]?.dot}`}></span>
+                                                    {lookupResult.slab}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="text-left sm:text-right">
+                                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Delivery Cost</p>
+                                            <p className="text-4xl font-black text-gray-900">₹{lookupResult.cost}</p>
+                                            <p className="text-[10px] text-gray-400 font-medium mt-1">one-way</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={handleReset}
+                                    className="mt-4 text-sm text-gray-400 hover:text-gray-600 font-bold transition-colors mx-auto block"
+                                >
+                                    Check another pincode →
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Result: Not Found */}
+                        {lookupError && (
+                            <div className="mt-8 animate-[fadeIn_0.4s_ease-out]">
+                                <div className="rounded-2xl border-2 border-gray-200 bg-gray-50 p-6 md:p-8 text-center">
+                                    <XCircle size={32} className="text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-600 font-medium text-sm mb-4">{lookupError}</p>
+                                    <a
+                                        href="https://wa.me/918971552453"
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-2 bg-[#25D366] text-white px-6 py-3 rounded-xl font-bold text-sm hover:scale-105 transition-all"
+                                    >
+                                        <MessageCircle size={16} /> WhatsApp Us
+                                    </a>
+                                </div>
+
+                                <button
+                                    onClick={handleReset}
+                                    className="mt-4 text-sm text-gray-400 hover:text-gray-600 font-bold transition-colors mx-auto block"
+                                >
+                                    Try another pincode →
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Default hint (before search) */}
+                        {!hasSearched && (
+                            <p className="mt-6 text-center text-gray-400 text-xs font-medium">
+                                Self pickup & drop from our hub is always <span className="text-emerald-600 font-bold">FREE</span>
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>

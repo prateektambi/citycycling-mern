@@ -35,6 +35,7 @@ const authRoutes = require('./routes/authRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const testRoutes = require('./routes/testRoutes');
 const userRoutes = require('./routes/userRoutes');
+const shippingRoutes = require('./routes/shippingRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/seed', seedRoutes);
@@ -42,6 +43,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/shipping', shippingRoutes);
 
 // Test routes (only in development)
 if (process.env.NODE_ENV !== 'production') {
