@@ -28,17 +28,18 @@ router.get('/', async (req, res) => {
             const totalDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
 
             // Calculate rental
+            const quantity = item.quantity || 1;
             let rentalType, appliedRate, totalRental, rentalLabel;
             if (totalDays === 1) {
                 rentalType = 'Daily';
                 appliedRate = product.dailyRate;
-                totalRental = product.dailyRate;
+                totalRental = product.dailyRate * quantity;
                 rentalLabel = '1 day';
             } else if (totalDays > 1) {
                 const weeks = Math.ceil(totalDays / 7);
                 rentalType = 'Weekly';
                 appliedRate = product.weeklyRate;
-                totalRental = weeks * product.weeklyRate;
+                totalRental = (weeks * product.weeklyRate) * quantity;
                 rentalLabel = `${weeks} week${weeks > 1 ? 's' : ''} (${totalDays} days)`;
             } else {
                 rentalType = null;
@@ -56,7 +57,7 @@ router.get('/', async (req, res) => {
                 d.setDate(d.getDate() + i);
                 const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                 const stock = avail.get ? avail.get(key) : avail[key];
-                if (stock !== undefined && stock <= 0) {
+                if (stock !== undefined && stock < quantity) {
                     isAvailable = false;
                     unavailableDate = key;
                     break;
@@ -83,6 +84,7 @@ router.get('/', async (req, res) => {
                 totalDays,
                 rentalType,
                 appliedRate,
+                quantity,
                 totalRental,
                 rentalLabel,
                 isAvailable,
@@ -100,7 +102,7 @@ router.get('/', async (req, res) => {
 // POST /api/cart/add — Add item to cart
 router.post('/add', async (req, res) => {
     try {
-        const { productId, startDate, endDate } = req.body;
+        const { productId, startDate, endDate, quantity } = req.body;
 
         if (!productId || !startDate || !endDate) {
             return res.status(400).json({ message: 'Product ID, start date, and end date are required' });
@@ -119,7 +121,8 @@ router.post('/add', async (req, res) => {
         cart.items.push({
             product: productId,
             startDate: new Date(startDate),
-            endDate: new Date(endDate)
+            endDate: new Date(endDate),
+            quantity: quantity || 1
         });
 
         await cart.save();
@@ -137,7 +140,7 @@ router.post('/add', async (req, res) => {
 // PUT /api/cart/item/:itemId — Update dates for a specific cart item
 router.put('/item/:itemId', async (req, res) => {
     try {
-        const { startDate, endDate } = req.body;
+        const { startDate, endDate, quantity } = req.body;
         const { itemId } = req.params;
 
         if (!startDate || !endDate) {
@@ -160,6 +163,9 @@ router.put('/item/:itemId', async (req, res) => {
 
         item.startDate = new Date(startDate);
         item.endDate = new Date(endDate);
+        if (quantity !== undefined) {
+             item.quantity = quantity;
+        }
         await cart.save();
 
         res.json({ message: 'Cart item updated' });

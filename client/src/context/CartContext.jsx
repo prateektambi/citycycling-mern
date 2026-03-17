@@ -38,11 +38,12 @@ export const CartProvider = ({ children }) => {
         }
     };
 
-    const addToCart = async (productId, startDate, endDate) => {
+    const addToCart = async (productId, quantity, startDate, endDate) => {
         setLoading(true);
         try {
             await API.post('/api/cart/add', {
                 productId,
+                quantity: quantity || 1,
                 startDate: new Date(startDate).toISOString(),
                 endDate: new Date(endDate).toISOString()
             });
@@ -73,6 +74,32 @@ export const CartProvider = ({ children }) => {
             return { 
                 success: false, 
                 message: err.response?.data?.message || err.message || 'Failed to update dates' 
+            };
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const updateQuantity = async (itemId, quantity) => {
+        setLoading(true);
+        try {
+            // We also need to send startDate and endDate when updating quantity
+            // to pass validation, so we should fetch the item from the current cart state
+            const item = cart.items.find(i => i._id === itemId);
+            if (!item) throw new Error("Item not found in cart");
+            
+            await API.put(`/api/cart/item/${itemId}`, {
+                startDate: item.startDate,
+                endDate: item.endDate,
+                quantity: quantity
+            });
+            await refreshCart();
+            return { success: true };
+        } catch (err) {
+            console.error('Error updating cart item quantity:', err);
+            return { 
+                success: false, 
+                message: err.response?.data?.message || err.message || 'Failed to update quantity' 
             };
         } finally {
             setLoading(false);
@@ -122,6 +149,7 @@ export const CartProvider = ({ children }) => {
             refreshCart,
             addToCart,
             updateDates,
+            updateQuantity,
             removeFromCart,
             clearCart
         }}>

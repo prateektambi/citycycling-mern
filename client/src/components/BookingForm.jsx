@@ -13,13 +13,13 @@ import {
 } from 'lucide-react';
 
 // ─── Rate Calculator ───────────────────────────────────────
-function calculateRental(totalDays, product) {
+function calculateRental(totalDays, product, quantity = 1) {
     if (totalDays <= 0) return { rentalType: null, appliedRate: 0, totalRental: 0, label: '' };
     if (totalDays === 1) {
         return {
             rentalType: 'Daily',
             appliedRate: product.dailyRate,
-            totalRental: product.dailyRate,
+            totalRental: product.dailyRate * quantity,
             label: '1 day',
             weeks: 0
         };
@@ -28,7 +28,7 @@ function calculateRental(totalDays, product) {
     return {
         rentalType: 'Weekly',
         appliedRate: product.weeklyRate,
-        totalRental: weeks * product.weeklyRate,
+        totalRental: (weeks * product.weeklyRate) * quantity,
         label: `${weeks} week${weeks > 1 ? 's' : ''} (${totalDays} days)`,
         weeks
     };
@@ -67,6 +67,7 @@ const BookingForm = ({ product, onDateSelect }) => {
     // ── Form State ──
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [quantity, setQuantity] = useState(1);
 
     // ── UI State ──
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,8 +81,8 @@ const BookingForm = ({ product, onDateSelect }) => {
     }, [startDate, endDate]);
 
     const rental = useMemo(() => {
-        return calculateRental(totalDays, product);
-    }, [totalDays, product]);
+        return calculateRental(totalDays, product, quantity);
+    }, [totalDays, product, quantity]);
 
     // ── Availability check ──
     const availabilityIssue = useMemo(() => {
@@ -92,12 +93,12 @@ const BookingForm = ({ product, onDateSelect }) => {
             d.setDate(d.getDate() + i);
             const key = toDateKey(d);
             const stock = avail[key] !== undefined ? avail[key] : 1;
-            if (stock <= 0) {
-                return `Not available on ${formatDate(d)}`;
+            if (stock < quantity) {
+                return `Only ${stock} available on ${formatDate(d)}`;
             }
         }
         return null;
-    }, [startDate, endDate, totalDays, product.availability]);
+    }, [startDate, endDate, totalDays, product.availability, quantity]);
 
     // ── Min date (today) ──
     const today = toDateKey(new Date());
@@ -112,7 +113,7 @@ const BookingForm = ({ product, onDateSelect }) => {
         setIsSubmitting(true);
         setSubmitError('');
 
-        const result = await addToCart(product._id, startDate, endDate);
+        const result = await addToCart(product._id, quantity, startDate, endDate);
         if (result.success) {
             setAddedToCart(true);
         } else {
@@ -185,6 +186,16 @@ const BookingForm = ({ product, onDateSelect }) => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+                {/* ── Quantity ── */}
+                <div>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Quantity</label>
+                    <div className="flex items-center gap-3">
+                        <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 font-bold">-</button>
+                        <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))} className="w-16 h-10 text-center bg-gray-50 border border-gray-200 rounded-xl text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+                        <button type="button" onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 font-bold">+</button>
+                    </div>
+                </div>
+
                 {/* ── Date Selection ── */}
                 <div className="grid grid-cols-2 gap-4">
                     <div>

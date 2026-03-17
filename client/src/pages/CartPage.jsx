@@ -24,7 +24,7 @@ import {
 
 const CartPage = () => {
     const { user } = useContext(AuthContext);
-    const { cart, cartCount, loading: cartLoading, removeFromCart, clearCart, refreshCart } = useContext(CartContext);
+    const { cart, cartCount, loading: cartLoading, removeFromCart, clearCart, refreshCart, updateQuantity } = useContext(CartContext);
     const navigate = useNavigate();
 
     // ── Form State ──
@@ -156,7 +156,7 @@ const CartPage = () => {
             const bookingData = cart.items.map(item => ({
                 product: item.product._id,
                 productCode: item.product.productCode,
-                quantity: 1,
+                quantity: item.quantity || 1,
                 startDate: new Date(item.startDate).toISOString(),
                 endDate: new Date(item.endDate).toISOString(),
                 rentalType: item.rentalType,
@@ -368,6 +368,19 @@ const CartPage = () => {
                                             <div className="flex items-center gap-1.5 bg-gray-100 px-3 py-1.5 rounded-lg text-xs md:text-sm">
                                                 <Clock size={14} className="text-gray-500" />
                                                 {item.rentalLabel}
+                                            </div>
+                                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-1">
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => updateQuantity(item._id, Math.max(1, (item.quantity || 1) - 1))}
+                                                    className="w-6 h-6 flex items-center justify-center rounded bg-gray-50 hover:bg-gray-100 text-gray-600"
+                                                >-</button>
+                                                <span className="text-xs font-bold w-4 text-center">{item.quantity || 1}</span>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => updateQuantity(item._id, (item.quantity || 1) + 1)}
+                                                    className="w-6 h-6 flex items-center justify-center rounded bg-gray-50 hover:bg-gray-100 text-gray-600"
+                                                >+</button>
                                             </div>
                                         </div>
 
