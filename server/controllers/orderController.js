@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const { isTotalStockAvailable } = require('../utils/availability');
 const { updateProductAvailability } = require('../utils/availabilityUpdater');
 const { sendWhatsAppMessage } = require('../utils/whatsappHelper');
+const { sendAdminOrderNotification } = require('../utils/emailHelper');
 
 
 // === CREATE ORDER (With State Management) ===
@@ -140,6 +141,9 @@ exports.createOrder = async (req, res) => {
 
         // Send WhatsApp notification
         await sendWhatsAppMessage(savedOrder, 'order_created');
+
+        // Send Email notification to Admins (fire-and-forget)
+        sendAdminOrderNotification(savedOrder, 'created').catch(err => console.error(err));
 
         res.status(201).json({ success: true, order: savedOrder });
 
@@ -355,6 +359,9 @@ exports.cancelOrder = async (req, res) => {
                 console.error(`[BACKGROUND_ERROR] Failed to update availability for product ${productId} after order cancellation:`, err);
             });
         });
+
+        // Send Email notification to Admins (fire-and-forget)
+        sendAdminOrderNotification(order, 'cancelled').catch(err => console.error(err));
 
         res.json({ message: "Order cancelled and inventory released", order });
     } catch (err) {
