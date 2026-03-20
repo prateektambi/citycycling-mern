@@ -32,9 +32,15 @@ const OrderList = () => {
     const filteredOrders = (orders || []).filter(order => {
         const matchesSearch = order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                               order.customer.phone.includes(searchTerm) ||
-                              order.orderId.includes(searchTerm);
+                              order.orderId.toLowerCase().includes(searchTerm.toLowerCase());
         
-        const matchesState = selectedStates.size === 0 || selectedStates.has(order.orderStatus);
+        let matchesState = true;
+        if (selectedStates.size > 0) {
+            matchesState = selectedStates.has(order.orderStatus);
+        } else if (searchTerm.trim() === '') {
+            // Default view (no filters, no search): hide Completed/Cancelled
+            matchesState = !['Completed', 'Cancelled'].includes(order.orderStatus);
+        }
         
         const matchesTags = selectedTags.size === 0 || 
                             (order.tags && order.tags.some(tag => selectedTags.has(tag)));
