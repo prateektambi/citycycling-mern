@@ -25,6 +25,20 @@ const MyOrders = () => {
         fetchOrders();
     }, []);
 
+    const handleCancelOrder = async (orderId) => {
+        if (!window.confirm("Are you sure you want to cancel this order?")) return;
+        try {
+            await orderService.cancel(orderId);
+            alert("Order cancelled successfully.");
+            setLoading(true);
+            const res = await orderService.getAll();
+            setOrders(res.data || res);
+            setLoading(false);
+        } catch (err) {
+            alert(err.response?.data?.message || err.message || "Failed to cancel order.");
+        }
+    };
+
     const filteredOrders = (orders || []).filter(order => {
         const search = searchTerm.toLowerCase();
         return order.orderId.toLowerCase().includes(search) ||
@@ -262,18 +276,35 @@ const MyOrders = () => {
                                         </div>
 
                                         <div className="flex flex-col md:flex-row items-center justify-between pt-6 border-t border-gray-200 gap-4">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-sm font-bold text-gray-600">Payment Status:</span>
-                                                <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase border ${getPaymentStatusStyle(order.financials.paymentStatus)}`}>
-                                                    {order.financials.paymentStatus}
-                                                </span>
+                                            <div className="flex flex-col gap-2 w-full md:w-auto">
+                                                <div className="flex items-center justify-between md:justify-start gap-4">
+                                                    <span className="text-sm font-bold text-gray-600">Payment Status:</span>
+                                                    <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase border ${getPaymentStatusStyle(order.financials.paymentStatus)}`}>
+                                                        {order.financials.paymentStatus}
+                                                    </span>
+                                                </div>
+                                                {(order.financials.paymentHistory?.length > 0) && (
+                                                    <div className="text-xs text-gray-500 font-medium whitespace-nowrap">
+                                                       Last Payment: {formatDate(order.financials.paymentHistory[order.financials.paymentHistory.length - 1].date)}
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            {(order.financials.paymentHistory?.length > 0) && (
-                                                <div className="flex gap-2 text-sm text-gray-500 font-medium">
-                                                   <span>Last Payment: {formatDate(order.financials.paymentHistory[order.financials.paymentHistory.length - 1].date)}</span>
-                                                </div>
-                                            )}
+                                            <div className="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
+                                                {order.orderStatus === 'On-Hold' ? (
+                                                    <button 
+                                                        onClick={() => handleCancelOrder(order.orderId)}
+                                                        className="w-full md:w-auto px-6 py-2.5 bg-white border-2 border-red-100 text-red-600 rounded-xl text-sm font-bold hover:bg-red-50 hover:border-red-200 transition"
+                                                    >
+                                                        Cancel Order
+                                                    </button>
+                                                ) : !['Cancelled', 'Completed'].includes(order.orderStatus) ? (
+                                                    <div className="w-full md:w-auto bg-blue-50 text-blue-700 px-4 py-2 bg-opacity-70 rounded-xl text-xs font-medium border border-blue-100 flex items-center justify-center gap-2">
+                                                        <AlertCircle size={14} className="text-blue-500"/>
+                                                        Reach out to us to modify or cancel
+                                                    </div>
+                                                ) : null}
+                                            </div>
                                         </div>
 
                                         {/* Payment History Expandable (Simplification: Just show if exists) */}

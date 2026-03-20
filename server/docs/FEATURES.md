@@ -25,8 +25,11 @@ The command center for store operations.
     *   **Logistics**: specific delivery/pickup slots and charges.
     *   **Dynamic Pricing**: System calculates "Cost Till Today" for early returns or extensions.
     *   **WhatsApp Integration**: Send pre-filled templates (Booking Confirmed, Payment Due, Location, etc.) directly to customer.
-    *   **Workflow Control**: Status transitions (On-Hold → Confirmed → In-Progress → Returned → Completed).
+*   **Workflow Control**: Status transitions (On-Hold → Confirmed → In-Progress → Returned → Completed).
     *   **Tags**: Custom tags like `Prepped`, `Damage-Assessment`, `Missing-Accessory`.
+    *   **P&L Tracking**: Record actual delivery and return costs separately from customer-billed charges to calculate Profit & Loss accurately.
+*   **Order Dashboard**: Intelligent default filtering shows only active orders (`On-Hold` to `Returned`) to keep the workspace clean, while allowing deep search across historical completed/cancelled data.
+*   **Automated Admin Alerts**: Instant email notifications for new online bookings and when a user directly cancels an order.
 
 ### 3. 👥 User Management
 *   **Customer Database**: Search users by Name, Email, or Phone.
@@ -64,6 +67,11 @@ Web interface for end-users.
 *   **Blog/Journal**: Read latest stories, event announcements, and tips.
     *   Powered by Sanity Headless CMS for rapid content publishing.
     *   Dynamic rendering with optimized images and modular content blocks.
+
+### 4. 🛒 E-Commerce & Booking
+*   **Multi-Product Cart**: Add multiple bikes, adjust quantities, select rental dates, and view live availability.
+*   **Online Booking & Checkout**: Transparent breakdown of rental cost, logistics, and refundable deposits before confirming a booking.
+*   **Order Tracking & Actions**: View past and active rentals. Users can seamlessly cancel `On-Hold` orders directly, and are prompted to reach out for active modifications.
 
 ---
 ## ⚙️ Infrastructure & Tech

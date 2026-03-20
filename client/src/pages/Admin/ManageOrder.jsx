@@ -669,22 +669,42 @@ const ManageOrder = () => {
                         <div className="space-y-4">
                             <div className="p-4 bg-gray-50 rounded-2xl space-y-3">
                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Outward (Delivery)</span>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <select className="border p-2.5 rounded-xl text-sm bg-white" value={orderData.logistics.delivery.type} onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, delivery: {...orderData.logistics.delivery, type: e.target.value}}})}>
-                                        <option value="Self-Pickup">Self-Pickup</option>
-                                        <option value="Home-Delivery">Home-Delivery</option>
-                                    </select>
-                                    <input type="number" value={orderData.logistics.delivery.charges || ''} placeholder="0" className="border p-2.5 rounded-xl text-sm" onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, delivery: {...orderData.logistics.delivery, charges: e.target.value}}})} />
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Type</label>
+                                        <select className="border p-2.5 w-full rounded-xl text-sm bg-white" value={orderData.logistics.delivery.type} onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, delivery: {...orderData.logistics.delivery, type: e.target.value}}})}>
+                                            <option value="Self-Pickup">Self-Pickup</option>
+                                            <option value="Home-Delivery">Home-Delivery</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Billed (₹)</label>
+                                        <input type="number" value={orderData.logistics.delivery.charges || ''} placeholder="0" className="border w-full p-2.5 rounded-xl text-sm" onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, delivery: {...orderData.logistics.delivery, charges: e.target.value}}})} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-orange-400 uppercase ml-1" title="Actual Cost for P&L">Actual (₹)</label>
+                                        <input type="number" value={orderData.logistics.delivery.actualCost || ''} placeholder="0" className="border border-orange-200 bg-orange-50 w-full p-2.5 rounded-xl text-sm" onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, delivery: {...orderData.logistics.delivery, actualCost: e.target.value}}})} />
+                                    </div>
                                 </div>
                             </div>
                             <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-2xl space-y-3">
                                 <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Inward (Return)</span>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <select className="border p-2.5 rounded-xl text-sm bg-white" value={orderData.logistics.return.type} onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, return: {...orderData.logistics.return, type: e.target.value}}})}>
-                                        <option value="Self-Drop">Self-Drop</option>
-                                        <option value="Home-Collection">Home-Collection</option>
-                                    </select>
-                                    <input type="number" value={orderData.logistics.return.charges || ''} placeholder="0" className="border p-2.5 rounded-xl text-sm" onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, return: {...orderData.logistics.return, charges: e.target.value}}})} />
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-blue-400 uppercase ml-1">Type</label>
+                                        <select className="border p-2.5 w-full rounded-xl text-sm bg-white" value={orderData.logistics.return.type} onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, return: {...orderData.logistics.return, type: e.target.value}}})}>
+                                            <option value="Self-Drop">Self-Drop</option>
+                                            <option value="Home-Collection">Home-Collection</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-blue-400 uppercase ml-1">Billed (₹)</label>
+                                        <input type="number" value={orderData.logistics.return.charges || ''} placeholder="0" className="border w-full p-2.5 rounded-xl text-sm" onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, return: {...orderData.logistics.return, charges: e.target.value}}})} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-orange-400 uppercase ml-1" title="Actual Cost for P&L">Actual (₹)</label>
+                                        <input type="number" value={orderData.logistics.return.actualCost || ''} placeholder="0" className="border border-orange-200 bg-orange-50 w-full p-2.5 rounded-xl text-sm" onChange={(e) => setOrderData({...orderData, logistics: {...orderData.logistics, return: {...orderData.logistics.return, actualCost: e.target.value}}})} />
+                                    </div>
                                 </div>
                             </div>
                         </div>

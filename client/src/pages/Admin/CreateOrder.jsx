@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
+import {
     ChevronLeft, User, Trash2, Plus, CreditCard, Truck, Calendar, MapPin, Phone
 } from 'lucide-react';
 import { productService } from '../../services/productService';
@@ -47,7 +47,7 @@ const CreateOrder = () => {
             const diffMs = end.getTime() - start.getTime();
             if (isNaN(diffMs)) return item;
             const diffDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-            
+
             let itemRental = 0;
             let unitsChargedLabel = "";
 
@@ -61,15 +61,15 @@ const CreateOrder = () => {
             if (item.rentalType === 'Weekly') {
                 const weeks = Math.floor(diffDays / 7);
                 const extraDays = diffDays % 7;
-                
+
                 if (orderData.allowPartialRates) {
                     const itemExtraRates = item.weeklyExtraRates || (product?.weeklyExtraRates || {});
                     const extraDayVal = itemExtraRates[`day${extraDays}`];
                     const extraRate = (extraDayVal !== undefined && extraDayVal !== null && extraDayVal !== '') ? Number(extraDayVal) : 0;
-                    
+
                     itemRental = (weeks * rate * qty) + (extraRate * qty);
                     unitsChargedLabel = extraDays > 0 ? `${weeks}w ${extraDays}d` : `${weeks} weeks`;
-                    
+
                     if (extraDays > 0) {
                         breakdown = `${qty}x [(${weeks}w * ₹${rate}) + ₹${extraRate}]`;
                     } else {
@@ -91,7 +91,7 @@ const CreateOrder = () => {
                     const roundedExtra = Math.ceil(dailyProrated / 50) * 50;
                     itemRental = (baseMonthly + roundedExtra) * qty;
                     unitsChargedLabel = extraDays > 0 ? `${months}m ${extraDays}d` : `${months} months`;
-                    
+
                     if (extraDays > 0) {
                         breakdown = `${qty}x [(${months}m * ₹${rate}) + ₹${roundedExtra}]`;
                     } else {
@@ -113,8 +113,8 @@ const CreateOrder = () => {
             rentalTotal += itemRental;
             depositTotal += itemDeposit;
 
-            if (item.durationDays !== diffDays || 
-                item.totalPrice !== itemRental || 
+            if (item.durationDays !== diffDays ||
+                item.totalPrice !== itemRental ||
                 item.breakdown !== breakdown) {
                 bookingsChanged = true;
             }
@@ -122,11 +122,11 @@ const CreateOrder = () => {
         });
 
         const safeNum = (v) => { const n = Number(v); return isNaN(n) ? 0 : n; };
-        const logisticsTotal = safeNum(orderData.logistics.delivery.charges) + 
-                               safeNum(orderData.logistics.return.charges);
+        const logisticsTotal = safeNum(orderData.logistics.delivery.charges) +
+            safeNum(orderData.logistics.return.charges);
         const grandTotal = rentalTotal + logisticsTotal;
 
-        const financialsChanged = 
+        const financialsChanged =
             orderData.financials.totalRental !== rentalTotal ||
             orderData.financials.totalDeposit !== depositTotal ||
             orderData.financials.totalLogistics !== logisticsTotal ||
@@ -135,7 +135,7 @@ const CreateOrder = () => {
         if (bookingsChanged || financialsChanged) {
             setOrderData(prev => ({
                 ...prev,
-                bookings: updatedBookings, 
+                bookings: updatedBookings,
                 financials: {
                     ...prev.financials,
                     totalRental: rentalTotal,
@@ -153,8 +153,8 @@ const CreateOrder = () => {
         setOrderData(prev => ({
             ...prev,
             bookings: [{
-                product: '', productCode: '', name: '', quantity: 1, 
-                startDate: today, endDate: today, 
+                product: '', productCode: '', name: '', quantity: 1,
+                startDate: today, endDate: today,
                 rentalType: 'Daily', appliedRate: 0, securityDeposit: 0,
                 unitsCharged: 0, durationDays: 0,
                 isLastDayAvailable: true,
@@ -169,7 +169,7 @@ const CreateOrder = () => {
 
         const newBookings = [...orderData.bookings];
         const currentType = newBookings[index].rentalType;
-        
+
         let rate = product.dailyRate;
         if (currentType === 'Weekly') rate = product.weeklyRate;
         if (currentType === 'Monthly') rate = product.monthlyRate || (product.weeklyRate * 4);
@@ -188,7 +188,7 @@ const CreateOrder = () => {
 
     const updateBookingField = (index, field, value) => {
         const newBookings = [...orderData.bookings];
-        
+
         if (field === 'rentalType' && newBookings[index].product) {
             const product = availableProducts.find(p => p._id === newBookings[index].product);
             if (value === 'Weekly') newBookings[index].appliedRate = product.weeklyRate;
@@ -209,7 +209,7 @@ const CreateOrder = () => {
         } else {
             newBookings[index][field] = value;
         }
-        
+
         setOrderData({ ...orderData, bookings: newBookings });
     };
 
@@ -295,7 +295,7 @@ const CreateOrder = () => {
             <div className="max-w-7xl mx-auto p-6 space-y-6">
                 {/* 1. Customer Section (Added requested fields) */}
                 <div className="bg-white p-6 rounded-3xl border border-gray-100 space-y-4 shadow-sm">
-                    <h2 className="font-bold flex items-center gap-2"><User size={18}/> Customer Information</h2>
+                    <h2 className="font-bold flex items-center gap-2"><User size={18} /> Customer Information</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <input placeholder="Full Name" className="border p-3 rounded-xl" onChange={(e) => updateCustomerField('name', e.target.value)} />
                         <input placeholder="Primary Phone" className="border p-3 rounded-xl" onChange={(e) => updateCustomerField('phone', e.target.value)} />
@@ -313,7 +313,7 @@ const CreateOrder = () => {
                         <h2 className="font-bold">Inventory & Duration</h2>
                         <div className="flex items-center gap-6">
                             <label className="flex items-center gap-2 cursor-pointer group">
-                                <div 
+                                <div
                                     onClick={() => setOrderData(prev => ({ ...prev, allowPartialRates: !prev.allowPartialRates }))}
                                     className={`w-12 h-6 rounded-full transition-all relative ${orderData.allowPartialRates ? 'bg-blue-600' : 'bg-gray-200'}`}
                                 >
@@ -322,23 +322,23 @@ const CreateOrder = () => {
                                 <span className="text-xs font-black text-gray-500 uppercase tracking-widest group-hover:text-blue-600 transition-colors">Split/Bridge Pricing</span>
                             </label>
                             <button onClick={addNewRow} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition">
-                                <Plus size={16}/> Add Bike
+                                <Plus size={16} /> Add Bike
                             </button>
                         </div>
                     </div>
-                    
+
                     <div className="p-6 space-y-4">
                         {orderData.bookings.length === 0 && (
                             <div className="text-center py-8 text-gray-400 text-sm">No items added yet. Click "Add Bike" to start.</div>
                         )}
                         {orderData.bookings.map((item, idx) => (
                             <div key={idx} className="bg-gray-50 rounded-2xl p-4 border border-gray-100 relative group transition hover:shadow-md">
-                                <button 
-                                    onClick={() => setOrderData({...orderData, bookings: orderData.bookings.filter((_, i) => i !== idx)})} 
+                                <button
+                                    onClick={() => setOrderData({ ...orderData, bookings: orderData.bookings.filter((_, i) => i !== idx) })}
                                     className="absolute top-2 right-2 p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition"
                                     title="Remove Item"
                                 >
-                                    <Trash2 size={16}/>
+                                    <Trash2 size={16} />
                                 </button>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
@@ -383,8 +383,8 @@ const CreateOrder = () => {
                                                 <input type="date" value={item.endDate} className="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" onChange={(e) => updateBookingField(idx, 'endDate', e.target.value)} />
                                             </div>
                                             <label className="flex items-center gap-2 cursor-pointer">
-                                                <input 
-                                                    type="checkbox" 
+                                                <input
+                                                    type="checkbox"
                                                     checked={item.isLastDayAvailable || false}
                                                     onChange={(e) => updateBookingField(idx, 'isLastDayAvailable', e.target.checked)}
                                                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
@@ -393,7 +393,7 @@ const CreateOrder = () => {
                                             </label>
                                         </div>
                                     </div>
-                                    
+
                                     {/* Footer Info Row */}
                                     <div className="lg:col-span-12 flex flex-col space-y-3 bg-white p-3 rounded-xl border border-gray-100 mt-1">
                                         <div className="flex flex-wrap justify-between items-center">
@@ -425,9 +425,9 @@ const CreateOrder = () => {
                                                 <div className="pt-3 border-t border-gray-50 flex items-center justify-between">
                                                     <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Adjust {extraDays} Extra Day(s) Price</p>
                                                     <div className="w-32">
-                                                        <input 
-                                                            type="number" 
-                                                            value={item.weeklyExtraRates && item.weeklyExtraRates[`day${extraDays}`] !== 0 ? item.weeklyExtraRates[`day${extraDays}`] : ''} 
+                                                        <input
+                                                            type="number"
+                                                            value={item.weeklyExtraRates && item.weeklyExtraRates[`day${extraDays}`] !== 0 ? item.weeklyExtraRates[`day${extraDays}`] : ''}
                                                             placeholder="0"
                                                             className="w-full border border-gray-100 p-1.5 rounded-lg text-[10px] font-bold text-emerald-700 outline-none focus:border-emerald-200 bg-emerald-50/30"
                                                             onChange={(e) => updateBookingField(idx, `weeklyExtraRates.day${extraDays}`, e.target.value)}
@@ -447,9 +447,9 @@ const CreateOrder = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-6">
                         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-                            <h3 className="font-bold flex items-center gap-2"><Truck size={18}/> Logistics Charges</h3>
+                            <h3 className="font-bold flex items-center gap-2"><Truck size={18} /> Logistics Charges</h3>
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-3 gap-3">
                                     <div>
                                         <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Delivery Type</label>
                                         <select className="border p-3 rounded-xl w-full text-sm bg-white" value={orderData.logistics.delivery.type} onChange={(e) => updateLogisticsField('delivery', 'type', e.target.value)}>
@@ -458,11 +458,15 @@ const CreateOrder = () => {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Delivery Charge</label>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Charge (₹)</label>
                                         <input type="number" placeholder="0" value={orderData.logistics.delivery.charges || ''} className="border p-3 rounded-xl w-full text-sm" onChange={(e) => updateLogisticsField('delivery', 'charges', e.target.value)} />
                                     </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-orange-400 uppercase ml-1" title="Actual Cost">Actual (₹)</label>
+                                        <input type="number" placeholder="0" value={orderData.logistics.delivery.actualCost || ''} className="border border-orange-200 bg-orange-50 p-3 rounded-xl w-full text-sm" onChange={(e) => updateLogisticsField('delivery', 'actualCost', e.target.value)} />
+                                    </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-3 gap-3">
                                     <div>
                                         <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Return Type</label>
                                         <select className="border p-3 rounded-xl w-full text-sm bg-white" value={orderData.logistics.return.type} onChange={(e) => updateLogisticsField('return', 'type', e.target.value)}>
@@ -471,15 +475,19 @@ const CreateOrder = () => {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Return Charge</label>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Charge (₹)</label>
                                         <input type="number" placeholder="0" value={orderData.logistics.return.charges || ''} className="border p-3 rounded-xl w-full text-sm" onChange={(e) => updateLogisticsField('return', 'charges', e.target.value)} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-orange-400 uppercase ml-1" title="Actual Cost">Actual (₹)</label>
+                                        <input type="number" placeholder="0" value={orderData.logistics.return.actualCost || ''} className="border border-orange-200 bg-orange-50 p-3 rounded-xl w-full text-sm" onChange={(e) => updateLogisticsField('return', 'actualCost', e.target.value)} />
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-                            <h3 className="font-bold flex items-center gap-2"><CreditCard size={18}/> Initial Payment</h3>
+                            <h3 className="font-bold flex items-center gap-2"><CreditCard size={18} /> Initial Payment</h3>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Amount Received</label>

@@ -58,12 +58,14 @@ const OrderSchema = new mongoose.Schema({
         delivery: {
             type: { type: String, enum: ['Self-Pickup', 'Home-Delivery'], default: 'Self-Pickup' },
             charges: { type: Number, default: 0 },
+            actualCost: { type: Number, default: 0 },
             scheduledDate: { type: Date },
             completedDate: { type: Date }
         },
         return: {
             type: { type: String, enum: ['Self-Drop', 'Home-Collection'], default: 'Self-Drop' },
             charges: { type: Number, default: 0 },
+            actualCost: { type: Number, default: 0 },
             scheduledDate: { type: Date },
             completedDate: { type: Date }
         }

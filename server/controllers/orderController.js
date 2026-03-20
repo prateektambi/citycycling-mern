@@ -333,6 +333,22 @@ exports.cancelOrder = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
+        const orderToCancel = await Order.findOne({ orderId: req.params.id }).session(session);
+        if (!orderToCancel) {
+            throw new Error('Order not found for cancellation.');
+        }
+
+        // 1. Permission Check
+        if (req.user && req.user.role !== 'admin') {
+            if (!orderToCancel.user || orderToCancel.user.toString() !== req.user.id) {
+                throw new Error('Not authorized to cancel this order.');
+            }
+            // 2. State Check
+            if (orderToCancel.orderStatus !== 'On-Hold') {
+                throw new Error('Only On-Hold orders can be cancelled directly. Please reach out to us to modify or cancel this order.');
+            }
+        }
+
         const order = await Order.findOneAndUpdate(
             { orderId: req.params.id },
             { 
@@ -343,10 +359,6 @@ exports.cancelOrder = async (req, res) => {
             },
             { new: true, session }
         );
-
-        if (!order) {
-            throw new Error('Order not found for cancellation.');
-        }
 
         await session.commitTransaction();
         console.log(`[cancelOrder] Order ${order.orderId} cancelled. Transaction committed.`);
