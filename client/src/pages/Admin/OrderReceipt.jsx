@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Bike } from 'lucide-react';
+import logo from '../../assets/logo.png';
 import { orderService } from '../../services/orderService';
 
 const OrderReceipt = () => {
@@ -40,17 +40,49 @@ const OrderReceipt = () => {
     const totalPaid = order.financials?.paymentHistory?.reduce((sum, p) => sum + (Number(p.amount) || 0), 0) || 0;
     const balanceDue = Math.max(0, (order.financials?.grandTotal || 0) - totalPaid);
 
+    const calculateDuration = (start, end, type, allowPartial) => {
+        if (!start || !end) return '';
+        const s = new Date(start);
+        const e = new Date(end);
+        s.setHours(0,0,0,0);
+        e.setHours(0,0,0,0);
+        const diffDays = Math.max(1, Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)));
+
+        let display = `${diffDays} Days`;
+
+        if (type === 'Weekly') {
+            if (!allowPartial) {
+                const chargedWeeks = Math.ceil(diffDays / 7);
+                display += ` / ${chargedWeeks} Weeks`;
+            } else {
+                const weeks = Math.floor(diffDays / 7);
+                const extra = diffDays % 7;
+                display += extra > 0 ? ` / ${weeks}W ${extra}D` : ` / ${weeks} Weeks`;
+            }
+        } else if (type === 'Monthly') {
+            if (!allowPartial) {
+                const chargedMonths = Math.ceil(diffDays / 30);
+                display += ` / ${chargedMonths} Months`;
+            } else {
+                const months = Math.floor(diffDays / 30);
+                const extra = diffDays % 30;
+                display += extra > 0 ? ` / ${months}M ${extra}D` : ` / ${months} Months`;
+            }
+        }
+        return display;
+    };
+
     return (
         <div className="min-h-screen bg-white text-gray-900 font-sans sm:p-8 flex items-start justify-center">
             <div className="w-full max-w-3xl bg-white sm:border border-gray-200 sm:shadow-lg sm:rounded-2xl p-6 sm:p-10">
                 {/* Header */}
                 <div className="flex justify-between items-start border-b border-gray-100 pb-6 mb-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center text-white">
-                            <Bike size={24} />
+                        <div className="w-12 h-12 flex items-center justify-center">
+                            <img src={logo} alt="City Cycling Logo" className="w-full h-full object-contain" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black tracking-tight text-gray-900">CityCycling</h1>
+                            <h1 className="text-2xl font-black tracking-tight text-gray-900">City Cycling</h1>
                             <p className="text-xs font-bold text-gray-400 tracking-widest uppercase">Premium Rentals</p>
                         </div>
                     </div>
@@ -70,7 +102,6 @@ const OrderReceipt = () => {
                     </div>
                     <div className="text-right">
                         <h3 className="text-[10px] font-black tracking-widest text-gray-400 uppercase mb-2">Order Details</h3>
-                        <p className="text-sm font-medium text-gray-600 mb-1">Status: <strong className="text-gray-900">{order.orderStatus}</strong></p>
                         {order.createdAt && <p className="text-sm font-medium text-gray-600">Date: <strong className="text-gray-900">{formatDate(order.createdAt)}</strong></p>}
                     </div>
                 </div>
@@ -90,20 +121,83 @@ const OrderReceipt = () => {
                             {order.bookings?.map((booking, idx) => (
                                 <tr key={idx} className="bg-white">
                                     <td className="p-4">
-                                        <p className="font-bold text-gray-900">{booking.name || booking.productCode}</p>
+                                        <p className="font-bold text-gray-900">
+                                            {booking.product?.name ? `${booking.product.name} (Size ${booking.product.size})` : (booking.name || booking.productCode)}
+                                        </p>
                                         <p className="text-xs text-gray-500 mt-0.5">Qty: {booking.quantity}</p>
                                     </td>
                                     <td className="p-4">
                                         <p className="font-medium text-gray-800">{formatDate(booking.startDate)} → {formatDate(booking.endDate)}</p>
                                         <p className="text-xs text-gray-500 mt-0.5">
-                                            {booking.unitsCharged || booking.durationDays} {booking.unitsCharged ? '' : 'Days'} ({booking.rentalType})
+                                            {calculateDuration(booking.startDate, booking.endDate, booking.rentalType, order.allowPartialRates !== false)}
                                         </p>
                                     </td>
-                                    <td className="p-4 font-medium text-gray-800">
-                                        {formatCurrency(booking.appliedRate)}<span className="text-xs text-gray-400">/{booking.rentalType === 'Daily' ? 'day' : booking.rentalType === 'Weekly' ? 'wk' : 'mo'}</span>
+                                    <td className="p-4 text-gray-800">
+                                        <div className="flex flex-col">
+                                            <span className="font-medium">{formatCurrency(booking.appliedRate)}<span className="text-xs text-gray-400">/{booking.rentalType === 'Daily' ? 'day' : booking.rentalType === 'Weekly' ? 'wk' : 'mo'}</span></span>
+                                            {(() => {
+                                                const s = new Date(booking.startDate);
+                                                const e = new Date(booking.endDate);
+                                                s.setHours(0,0,0,0);
+                                                e.setHours(0,0,0,0);
+                                                const actualDiffDays = Math.max(1, Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)));
+                                                
+                                                if (order.allowPartialRates !== false && booking.rentalType === 'Weekly' && (actualDiffDays % 7 > 0)) {
+                                                    const extraDays = actualDiffDays % 7;
+                                                    const extraRate = booking.weeklyExtraRates?.[`day${extraDays}`] || 0;
+                                                    return (
+                                                        <span className="text-[10px] text-gray-400 leading-none mt-1">
+                                                            + {formatCurrency(extraRate)} / {extraDays} Extra Days
+                                                        </span>
+                                                    );
+                                                }
+                                                if (order.allowPartialRates !== false && booking.rentalType === 'Monthly' && (actualDiffDays % 30 > 0)) {
+                                                    const extraDays = actualDiffDays % 30;
+                                                    const extraRate = Math.ceil(((booking.appliedRate / 30) * extraDays) / 50) * 50;
+                                                    return (
+                                                        <span className="text-[10px] text-gray-400 leading-none mt-1">
+                                                            + {formatCurrency(extraRate)} / {extraDays} Extra Days
+                                                        </span>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
+                                        </div>
                                     </td>
                                     <td className="p-4 font-bold text-gray-900 text-right">
-                                        {formatCurrency(booking.totalPrice || (booking.appliedRate * booking.quantity))}
+                                        {(() => {
+                                            const s = new Date(booking.startDate);
+                                            const e = new Date(booking.endDate);
+                                            s.setHours(0,0,0,0);
+                                            e.setHours(0,0,0,0);
+                                            const actualDiffDays = Math.max(1, Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)));
+                                            const qty = Number(booking.quantity) || 1;
+                                            
+                                            let basePrice = 0;
+                                            if (booking.rentalType === 'Weekly') {
+                                                if (order.allowPartialRates !== false) {
+                                                    const weeks = Math.floor(actualDiffDays / 7);
+                                                    const extraDays = actualDiffDays % 7;
+                                                    const extraRate = booking.weeklyExtraRates?.[`day${extraDays}`] || 0;
+                                                    basePrice = (weeks * booking.appliedRate) + extraRate;
+                                                } else {
+                                                    basePrice = Math.ceil(actualDiffDays / 7) * booking.appliedRate;
+                                                }
+                                            } else if (booking.rentalType === 'Monthly') {
+                                                if (order.allowPartialRates !== false) {
+                                                    const months = Math.floor(actualDiffDays / 30);
+                                                    const extraDays = actualDiffDays % 30;
+                                                    const extraRate = Math.ceil(((booking.appliedRate / 30) * extraDays) / 50) * 50;
+                                                    basePrice = (months * booking.appliedRate) + extraRate;
+                                                } else {
+                                                    basePrice = Math.ceil(actualDiffDays / 30) * booking.appliedRate;
+                                                }
+                                            } else {
+                                                basePrice = actualDiffDays * booking.appliedRate;
+                                            }
+                                            
+                                            return formatCurrency(booking.totalPrice || (basePrice * qty));
+                                        })()}
                                     </td>
                                 </tr>
                             ))}

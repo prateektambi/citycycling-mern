@@ -176,7 +176,7 @@ exports.getOrders = async (req, res) => {
         const orders = await Order.find(query)
             .sort({ createdAt: -1 })
             .populate('user', 'email profile.name')
-            .populate('bookings.product', 'name imageUrls productCode');
+            .populate('bookings.product', 'name imageUrls productCode size');
         
         res.status(200).json(orders);
     } catch (error) {

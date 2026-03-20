@@ -267,7 +267,8 @@ const CreateOrder = () => {
                 appliedRate: safeNum(b.appliedRate),
                 quantity: safeNum(b.quantity),
                 securityDeposit: safeNum(b.securityDeposit),
-                totalPrice: safeNum(b.totalPrice)
+                totalPrice: safeNum(b.totalPrice),
+                durationDays: safeNum(b.durationDays)
             }))
         };
 

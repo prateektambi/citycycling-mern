@@ -185,7 +185,7 @@ const MyOrders = () => {
                                                     {/* Details */}
                                                     <div className="flex-1 min-w-0">
                                                         <h5 className="font-bold text-gray-900 truncate">
-                                                            {booking.product?.name || booking.productCode || 'Unknown Product'}
+                                                            {booking.product?.name ? `${booking.product.name} (Size: ${booking.product.size || 'N/A'})` : (booking.name || booking.productCode || 'Unknown Product')}
                                                         </h5>
                                                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-gray-600">
                                                             <span className="bg-white px-2 py-0.5 rounded border border-gray-200 text-xs font-semibold">

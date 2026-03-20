@@ -32,6 +32,8 @@ const OrderSchema = new mongoose.Schema({
         rentalType: { type: String, enum: ['Daily', 'Weekly', 'Monthly'] },
         appliedRate: { type: Number, required: true },
         securityDeposit: { type: Number, required: true },
+        durationDays: { type: Number }, // Actual number of days
+        totalPrice: { type: Number }, // Pre-calculated total for item
 
         // Keep for backward compatibility but not used in new flow
         bookingStatus: { 
