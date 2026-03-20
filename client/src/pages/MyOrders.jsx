@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Package, Calendar, Truck, Bike, ChevronRight, AlertCircle, ShoppingBag, CreditCard, DollarSign, RefreshCw, MapPin, Clock } from 'lucide-react';
+import { Search, Package, Calendar, Truck, Bike, ChevronRight, AlertCircle, ShoppingBag, CreditCard, DollarSign, RefreshCw, MapPin, Clock, FileText } from 'lucide-react';
 import { orderService } from '../services/orderService';
 import { AuthContext } from '../context/AuthContext';
 
@@ -290,7 +290,16 @@ const MyOrders = () => {
                                                 )}
                                             </div>
 
-                                            <div className="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
+                                            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
+                                                {['In-Progress', 'Returned', 'Completed'].includes(order.orderStatus) && (
+                                                    <button 
+                                                        onClick={() => window.open(`/orders/${order.orderId}/receipt`, '_blank')}
+                                                        className="w-full md:w-auto px-4 py-2.5 bg-white border-2 border-purple-100 text-purple-600 rounded-xl text-sm font-bold hover:bg-purple-50 hover:border-purple-200 transition flex items-center justify-center gap-2"
+                                                    >
+                                                        <FileText size={16}/> Receipt
+                                                    </button>
+                                                )}
+
                                                 {order.orderStatus === 'On-Hold' ? (
                                                     <button 
                                                         onClick={() => handleCancelOrder(order.orderId)}

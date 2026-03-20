@@ -16,6 +16,7 @@ import ItemList from './pages/Admin/ItemList';
 import ManageItem from './pages/Admin/ManageItem';
 import ProductList from './pages/Admin/ProductList';
 import ManageProduct from './pages/Admin/ManageProduct';
+import OrderReceipt from './pages/Admin/OrderReceipt';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import UserList from './pages/Admin/UserList';
 import Login from './pages/Login';
@@ -83,6 +84,16 @@ function App() {
           element={
             <ProtectedRoute>
               <CartPage />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Protected Shared Route WITHOUT Layout (For Print/Screenshots) */}
+        <Route 
+          path="/orders/:id/receipt" 
+          element={
+            <ProtectedRoute>
+              <OrderReceipt />
             </ProtectedRoute>
           } 
         />

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
-    ChevronLeft, User, Trash2, Plus, CreditCard, Truck, Calendar, History, Wallet, Ban, Tag, AlertCircle, ArrowRight, MessageCircle
+    ChevronLeft, User, Trash2, Plus, CreditCard, Truck, Calendar, History, Wallet, Ban, Tag, AlertCircle, ArrowRight, MessageCircle, FileText
 } from 'lucide-react';
 import { productService } from '../../services/productService';
 import { orderService } from '../../services/orderService';
@@ -397,6 +397,13 @@ const ManageOrder = () => {
                         <div className="text-xs font-mono bg-gray-100 p-2 rounded border font-bold text-gray-600 leading-none">{orderData.orderId}</div>
                         {orderData.createdAt && <span className="text-[10px] text-gray-400 font-bold mt-1">Placed: {new Date(orderData.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(orderData.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>}
                     </div>
+                    <button 
+                        onClick={() => window.open(`/orders/${orderData.orderId}/receipt`, '_blank')}
+                        className="p-2 ml-2 bg-purple-50 text-purple-600 border border-purple-200 hover:bg-purple-100 rounded-lg transition" 
+                        title="Print/Screenshot Receipt"
+                    >
+                        <FileText size={18} />
+                    </button>
                 </div>
             </div>
 
