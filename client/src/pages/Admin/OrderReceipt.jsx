@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import logo from '../../assets/logo.png';
 import { orderService } from '../../services/orderService';
+import { Printer, ChevronLeft } from 'lucide-react';
 
 const OrderReceipt = () => {
     const { id } = useParams();
@@ -73,8 +74,41 @@ const OrderReceipt = () => {
     };
 
     return (
-        <div className="min-h-screen bg-white text-gray-900 font-sans sm:p-8 flex items-start justify-center">
-            <div className="w-full max-w-3xl bg-white sm:border border-gray-200 sm:shadow-lg sm:rounded-2xl p-6 sm:p-10">
+        <div className="min-h-screen bg-gray-50 text-gray-900 font-sans sm:p-8 flex flex-col items-center">
+            {/* Print & Action Bar - Hidden during print */}
+            <div className="w-full max-w-3xl mb-6 flex justify-between items-center print:hidden px-4 sm:px-0">
+                <button 
+                    onClick={() => window.close()} 
+                    className="flex items-center gap-2 text-gray-500 hover:text-gray-800 font-bold text-sm transition-colors"
+                >
+                    <ChevronLeft size={18} /> Close Tab
+                </button>
+                <button 
+                    onClick={() => window.print()} 
+                    className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
+                >
+                    <Printer size={18} /> Print Receipt
+                </button>
+            </div>
+
+            <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                    @page { margin: 1.5cm; }
+                    body { background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                    .min-h-screen { background: white !important; padding: 0 !important; margin: 0 !important; display: block !important; }
+                    .max-w-3xl { max-width: 100% !important; border: none !important; shadow: none !important; margin: 0 !important; padding: 0 !important; }
+                    .bg-white, .bg-gray-50, .bg-gray-900, .bg-blue-50 { background: white !important; color: black !important; }
+                    .text-gray-400, .text-gray-500, .text-gray-600, .text-blue-600 { color: black !important; }
+                    .border, .border-gray-100, .border-gray-200 { border-color: #eee !important; }
+                    .shadow-lg, .shadow-sm { box-shadow: none !important; }
+                    button, .print\\:hidden { display: none !important; }
+                    h1, h2, h3, p, span, td, th { color: black !important; -webkit-print-color-adjust: economy !important; }
+                    .font-mono { background: transparent !important; border: 1px solid #eee !important; }
+                    .divide-y > * + * { border-top-color: #eee !important; }
+                }
+            `}} />
+
+            <div className="w-full max-w-3xl bg-white sm:border border-gray-200 sm:shadow-lg sm:rounded-2xl p-6 sm:p-10 mb-20 print:m-0 print:shadow-none print:border-none">
                 {/* Header */}
                 <div className="flex justify-between items-start border-b border-gray-100 pb-6 mb-6">
                     <div className="flex items-center gap-3">

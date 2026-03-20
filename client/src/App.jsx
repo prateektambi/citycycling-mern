@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import HowItWorks from './pages/HowItWorks';
@@ -38,12 +38,15 @@ import { LinkedInCallback } from './components/LinkedInAuth';
 import './styles/App.css';
 
 function App() {
+  const location = useLocation();
+  const isReceiptPage = location.pathname.includes('/receipt');
+
   return (
     <div className="flex flex-col min-h-screen">
       <ScrollToTop />
       <Analytics />
       <GoogleOneTap />
-      <Header />
+      {!isReceiptPage && <Header />}
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
