@@ -273,6 +273,16 @@ const ProductPage = () => {
                                     <p className="text-md font-black text-gray-900 uppercase">{product.minHeightFt}'{product.minHeightInch}" - {product.maxHeightFt}'{product.maxHeightInch}"</p>
                                 </div>
                              </div>
+                             
+                             <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-blue-600">
+                                    <Bike size={24}/>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-none">Category</p>
+                                    <p className="text-md font-black text-gray-900 uppercase">{product.type}</p>
+                                </div>
+                             </div>
                         </div>
 
                         {/* Security Deposit & Verification Note */}
@@ -291,54 +301,11 @@ const ProductPage = () => {
                             </div>
                         </div>
 
-                        {/* Booking Form */}
-                        <div className="pt-6">
+                        {/* Booking Form with Calendar */}
+                        <div className="pt-6 space-y-8">
+                            {renderAvailabilityCalendar()}
                             <BookingForm product={product} />
                         </div>
-                    </div>
-                </div>
-
-                {/* Bottom Section: Availability & Extra Info */}
-                <div className="mt-24 md:mt-32 pt-24 border-t gap-16 md:gap-24 flex flex-col xl:flex-row">
-                    <div className="flex-1 max-w-2xl">
-                        <div className="space-y-12">
-                            <div>
-                                <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tight mb-6">Height Specification</h2>
-                                <p className="text-gray-500 font-medium leading-relaxed mb-6">
-                                    Selecting the right frame size is crucial for your performance and comfort. This bike is optimized for:
-                                </p>
-                                <div className="bg-blue-50/50 rounded-3xl p-6 border border-blue-100 flex items-center gap-6">
-                                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-blue-50">
-                                        <Ruler size={32}/>
-                                    </div>
-                                    <div className="text-blue-900">
-                                        <p className="text-2xl font-black tracking-tight leading-none mb-1">
-                                            {product.minHeightFt}'{product.minHeightInch}" - {product.maxHeightFt}'{product.maxHeightInch}"
-                                        </p>
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Recommended Rider Height</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tight mb-6">Performance Details</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
-                                        <h5 className="font-black text-gray-900 uppercase text-xs mb-2">Bike Category</h5>
-                                        <p className="text-gray-500 text-sm font-medium">{product.type}</p>
-                                    </div>
-                                    <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
-                                        <h5 className="font-black text-gray-900 uppercase text-xs mb-2">Primary Usage</h5>
-                                        <p className="text-gray-500 text-sm font-medium">Urban Commute & Light Trails</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Integrated Calendar Section */}
-                    <div className="xl:w-[450px]">
-                        {renderAvailabilityCalendar()}
                     </div>
                 </div>
             </div>

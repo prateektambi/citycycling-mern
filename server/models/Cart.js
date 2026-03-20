@@ -33,7 +33,5 @@ const CartSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Index for fast lookups
-CartSchema.index({ user: 1 });
 
 module.exports = mongoose.model('Cart', CartSchema);
