@@ -72,3 +72,25 @@ Here is how the system handles moving between these states:
     *   **Releases Inventory** immediately.
     *   **Checks Payment:** If `TotalPaid > 0`, automatically adds **`Refund-Pending`** tag.
     *   Sends **"Order Cancelled"** WhatsApp message.
+
+---
+
+## 4. Customer Lifecycle & Auto-Registration
+
+The system is designed to ensure every order is linked to a functional user account, whether the customer is a returning user or a first-time guest.
+
+### A. Searching Existing Users
+When creating a new order in the Admin Panel, the system allows searching by **Email** (primary) or **Phone** (fallback).
+- If a match is found, the customer's Name, Phone, and Address are auto-populated.
+- The order is explicitly linked to the `User` document via the `user` field.
+
+### B. Background Auto-Registration (Silent)
+If an Admin creates an order for a new customer (manual entry with an email that doesn't exist):
+1.  **Order Creation**: The order is saved immediately to ensure no delay for the Admin.
+2.  **User Creation**: The backend silently creates a new `User` account using the provided email, name, phone, and address.
+3.  **Linking**: The newly created `User` is then linked to the `Order`.
+4.  **Verification**: The email is marked as `Verified` (trusted admin creation).
+5.  **Access**: No password is set initially; the customer can use the "Forgot Password" flow to access their account later.
+
+### C. Manual/Guest Orders
+If no email is provided, the order remains a "Guest Order" linked only by the name and phone number provided in the `customer` object. No user account is created in this case.

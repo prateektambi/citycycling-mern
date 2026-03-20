@@ -53,3 +53,28 @@ The displayed status on the Order List and Manage Order pages is derived as foll
 **Status Labels:**
 *   **Overdue (Red)**: Balance > 0 (Customer owes money for usage up to today).
 *   **Balance (Green)**: Balance < 0 (Customer has paid more than current usage).
+
+---
+
+## 5. Receipt Generation & Duration Display
+
+The customer receipt (`OrderReceipt.jsx`) uses a specific formatting logic to ensure clarity in rental durations and pricing, especially when "Bridge Pricing" is involved.
+
+### A. Dual-Layer Duration Display
+Every line item in the receipt shows duration in two formats:
+1.  **Total Days**: Always displayed (e.g., `10 Days`).
+2.  **Unit Breakdown**: Displayed next to total days based on the `allowPartialRates` flag:
+    - **If `false`**: Shows the "Ceiling" unit (e.g., `2 Weeks`).
+    - **If `true`**: Shows the exact "Bridge" breakdown (e.g., `1W 3D`).
+
+### B. Pricing Breakdown (Rate Column)
+When bridge pricing is active (`allowPartialRates: true`):
+- The **Rate** column shows both the base rate and the extra days surcharge.
+- *Example:* 
+    - `₹500 / week`
+    - `+ ₹300 / 2 Days`
+
+### C. On-the-Fly Calculations
+To ensure legacy orders (created before `totalPrice` was persisted) are accurate, the receipt component performs an **"On-the-fly"** calculation of the line item total.
+- **Formula**: `(AppliedRate + BridgeSurcharge) * Quantity`
+- This ensures the **Total** column matches the actual sum of the base rate and extra day charges, providing a consistent experience across all order types.
