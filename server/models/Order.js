@@ -11,6 +11,7 @@ const OrderSchema = new mongoose.Schema({
 
     customer: {
         name: { type: String, required: true },
+        email: { type: String }, // Added to track/create user accounts
         phone: { type: String, required: true },
         alternatePhone: { type: String },
         address: String,

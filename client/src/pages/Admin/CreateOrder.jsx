@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    ChevronLeft, User, Trash2, Plus, CreditCard, Truck, Calendar, MapPin, Phone
-} from 'lucide-react';
 import { productService } from '../../services/productService';
 import { orderService } from '../../services/orderService';
+import { userService } from '../../services/userService';
+import { 
+    ChevronLeft, User, Trash2, Plus, CreditCard, Truck, Calendar, MapPin, Phone, Search, Loader2 
+} from 'lucide-react';
 
 const CreateOrder = () => {
     const navigate = useNavigate();
     const [availableProducts, setAvailableProducts] = useState([]);
     const [orderData, setOrderData] = useState({
-        customer: { name: '', phone: '', alternatePhone: '', address: '', pincode: '' },
+        customer: { name: '', email: '', phone: '', alternatePhone: '', address: '', pincode: '' },
         bookings: [],
         logistics: {
             delivery: { type: 'Self-Pickup', charges: 0 },
@@ -27,6 +28,9 @@ const CreateOrder = () => {
         orderStatus: 'Pending',
         allowPartialRates: true
     });
+    const [searchEmail, setSearchEmail] = useState('');
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [searchStatus, setSearchStatus] = useState({ type: '', message: '' });
 
     useEffect(() => {
         productService.getAll().then(data => setAvailableProducts(data || []));
@@ -237,6 +241,39 @@ const CreateOrder = () => {
         }));
     };
 
+    const handleUserSearch = async () => {
+        if (!searchEmail) return;
+        setSearchLoading(true);
+        setSearchStatus({ type: '', message: '' });
+        try {
+            const user = await userService.findByEmail(searchEmail);
+            if (user && user.profile) {
+                const { profile } = user;
+                // Format full address
+                const addr = profile.address || {};
+                const fullAddr = [addr.street, addr.area, addr.city, addr.state].filter(Boolean).join(', ');
+                
+                setOrderData(prev => ({
+                    ...prev,
+                    customer: {
+                        name: profile.name || '',
+                        email: user.email || searchEmail,
+                        phone: profile.phone || '',
+                        alternatePhone: profile.alternatePhone || '',
+                        address: fullAddr || '',
+                        pincode: addr.pincode || ''
+                    }
+                }));
+                setSearchStatus({ type: 'success', message: 'User found and details populated!' });
+            }
+        } catch (err) {
+            console.error("Search failed:", err);
+            setSearchStatus({ type: 'error', message: err.response?.status === 404 ? 'User not found.' : 'Search failed.' });
+        } finally {
+            setSearchLoading(false);
+        }
+    };
+
     const handleSaveOrder = async () => {
         if (!orderData.customer.name || orderData.bookings.length === 0) {
             alert("Missing required fields."); return;
@@ -294,17 +331,79 @@ const CreateOrder = () => {
             </div>
 
             <div className="max-w-7xl mx-auto p-6 space-y-6">
-                {/* 1. Customer Section (Added requested fields) */}
+                {/* 1. Customer Section */}
                 <div className="bg-white p-6 rounded-3xl border border-gray-100 space-y-4 shadow-sm">
-                    <h2 className="font-bold flex items-center gap-2"><User size={18} /> Customer Information</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <input placeholder="Full Name" className="border p-3 rounded-xl" onChange={(e) => updateCustomerField('name', e.target.value)} />
-                        <input placeholder="Primary Phone" className="border p-3 rounded-xl" onChange={(e) => updateCustomerField('phone', e.target.value)} />
-                        <input placeholder="Alternate Phone" className="border p-3 rounded-xl" onChange={(e) => updateCustomerField('alternatePhone', e.target.value)} />
+                    <div className="flex justify-between items-center">
+                        <h2 className="font-bold flex items-center gap-2"><User size={18} /> Customer Information</h2>
+                        
+                        {/* Search Box */}
+                        <div className="flex items-center gap-2">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search by Email..." 
+                                    className="pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-100 transition-all w-64"
+                                    value={searchEmail}
+                                    onChange={(e) => setSearchEmail(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleUserSearch()}
+                                />
+                            </div>
+                            <button 
+                                onClick={handleUserSearch}
+                                disabled={searchLoading || !searchEmail}
+                                className="bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-black disabled:opacity-50 transition-all"
+                            >
+                                {searchLoading ? <Loader2 className="animate-spin" size={14} /> : 'Search'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {searchStatus.message && (
+                        <div className={`text-xs p-3 rounded-xl flex items-center gap-2 ${searchStatus.type === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                            {searchStatus.message}
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+                        <input 
+                            placeholder="Full Name" 
+                            className="border p-3 rounded-xl" 
+                            value={orderData.customer.name}
+                            onChange={(e) => updateCustomerField('name', e.target.value)} 
+                        />
+                        <input 
+                            placeholder="Customer Email" 
+                            className="border p-3 rounded-xl" 
+                            value={orderData.customer.email}
+                            onChange={(e) => updateCustomerField('email', e.target.value)} 
+                        />
+                        <input 
+                            placeholder="Primary Phone" 
+                            className="border p-3 rounded-xl" 
+                            value={orderData.customer.phone}
+                            onChange={(e) => updateCustomerField('phone', e.target.value)} 
+                        />
+                        <input 
+                            placeholder="Alternate Phone" 
+                            className="border p-3 rounded-xl" 
+                            value={orderData.customer.alternatePhone}
+                            onChange={(e) => updateCustomerField('alternatePhone', e.target.value)} 
+                        />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <input placeholder="Address" className="md:col-span-3 border p-3 rounded-xl" onChange={(e) => updateCustomerField('address', e.target.value)} />
-                        <input placeholder="Pincode" className="border p-3 rounded-xl" onChange={(e) => updateCustomerField('pincode', e.target.value)} />
+                        <input 
+                            placeholder="Address" 
+                            className="md:col-span-3 border p-3 rounded-xl" 
+                            value={orderData.customer.address}
+                            onChange={(e) => updateCustomerField('address', e.target.value)} 
+                        />
+                        <input 
+                            placeholder="Pincode" 
+                            className="border p-3 rounded-xl" 
+                            value={orderData.customer.pincode}
+                            onChange={(e) => updateCustomerField('pincode', e.target.value)} 
+                        />
                     </div>
                 </div>
 

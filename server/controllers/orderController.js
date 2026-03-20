@@ -90,16 +90,55 @@ exports.createOrder = async (req, res) => {
 
         // Match User Logic:
         // 1. If req.user exists (Authenticated Request) and they are NOT admin (User placing order), link directly.
-        // 2. If Admin placing order OR Guest, try to find user by Phone Number.
+        // 2. If Admin placing order OR Guest, try to find user by Email first, then Phone Number.
         let userId = null;
         if (req.user && req.user.role === 'user') {
             userId = req.user.id;
-        } else if (customer && customer.phone) {
-            // Admin created or Guest -> Try to match phone
-            const existingUser = await User.findOne({ 'profile.phone': customer.phone });
+        } else if (customer) {
+            let existingUser = null;
+            
+            // Try matching by Email first (more reliable)
+            if (customer.email) {
+                existingUser = await User.findOne({ email: customer.email.toLowerCase() });
+            }
+            
+            // If not found by email, try matching by phone
+            if (!existingUser && customer.phone) {
+                existingUser = await User.findOne({ 'profile.phone': customer.phone });
+            }
+
             if (existingUser) {
                 userId = existingUser._id;
                 console.log(`[createOrder] Linked order to existing user: ${existingUser.email}`);
+            } else if (customer.email && customer.name) {
+                // AUTO-CREATE USER (Silent Background Registration)
+                try {
+                    console.log(`[createOrder] Auto-creating user for: ${customer.email}`);
+                    const newUser = new User({
+                        email: customer.email.toLowerCase(),
+                        role: 'user',
+                        profile: {
+                            name: customer.name,
+                            phone: customer.phone,
+                            alternatePhone: customer.alternatePhone,
+                            address: {
+                                street: customer.address || '',
+                                pincode: customer.pincode || ''
+                            }
+                        },
+                        accountStatus: 'active',
+                        emailVerified: true, // Trusted admin creation
+                        authProvider: 'local'
+                    });
+                    
+                    // Note: No password set initially. User must use "Forgot Password" or admin can set it.
+                    const savedUser = await newUser.save({ session });
+                    userId = savedUser._id;
+                    console.log(`[createOrder] Auto-created user: ${savedUser._id}`);
+                } catch (userErr) {
+                    console.error("[createOrder] User auto-creation failed (non-blocking):", userErr);
+                    // We don't throw here to avoid blocking the main order flow
+                }
             }
         }
 
