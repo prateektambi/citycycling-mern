@@ -226,7 +226,8 @@ const OrderList = () => {
                             <div className="p-5 flex justify-between items-start border-b border-gray-50">
                                 <div>
                                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Order ID</span>
-                                    <h3 className="font-mono font-bold text-gray-900">{order.orderId}</h3>
+                                    <h3 className="font-mono font-bold text-gray-900 leading-none mb-1">{order.orderId}</h3>
+                                    {order.createdAt && <p className="text-[10px] font-bold text-gray-400">{new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} • {new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>}
                                 </div>
                                 <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter ${getStatusStyle(order.orderStatus)}`}>
                                     {order.orderStatus}

@@ -267,6 +267,7 @@ const ManageOrder = () => {
         newBookings[index] = {
             ...newBookings[index],
             product: product._id,
+            productCode: product.productCode,
             name: `${product.name} (${product.size})`,
             appliedRate: rate,
             securityDeposit: product.securityDeposit || 500,
@@ -392,7 +393,10 @@ const ManageOrder = () => {
                     }`}>
                         {orderData.orderStatus}
                     </span>
-                    <div className="text-xs font-mono bg-gray-100 p-2 rounded border font-bold text-gray-600">{orderData.orderId}</div>
+                    <div className="flex flex-col items-end">
+                        <div className="text-xs font-mono bg-gray-100 p-2 rounded border font-bold text-gray-600 leading-none">{orderData.orderId}</div>
+                        {orderData.createdAt && <span className="text-[10px] text-gray-400 font-bold mt-1">Placed: {new Date(orderData.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(orderData.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>}
+                    </div>
                 </div>
             </div>
 
@@ -537,7 +541,7 @@ const ManageOrder = () => {
                                 <span className="text-xs font-black text-gray-500 uppercase tracking-widest group-hover:text-blue-600 transition-colors">Split/Bridge Pricing</span>
                             </label>
                             <button 
-                                onClick={() => setOrderData({...orderData, bookings: [{ product: '', quantity: 1, startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0], rentalType: 'Daily', appliedRate: 0, securityDeposit: 0, isLastDayAvailable: true, weeklyExtraRates: { day1: 0, day2: 0, day3: 0, day4: 0, day5: 0, day6: 0 } }, ...orderData.bookings]})}
+                                onClick={() => setOrderData({...orderData, bookings: [{ product: '', productCode: '', name: '', quantity: 1, startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0], rentalType: 'Daily', appliedRate: 0, securityDeposit: 0, isLastDayAvailable: true, weeklyExtraRates: { day1: 0, day2: 0, day3: 0, day4: 0, day5: 0, day6: 0 } }, ...orderData.bookings]})}
                                 className="bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2"
                             >
                                 <Plus size={14}/> Add Bike
