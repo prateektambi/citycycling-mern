@@ -22,12 +22,12 @@ const ManageProduct = () => {
         slug: '',
         description: '',
         category: 'Cycle',
-        type: 'MTB',
-        size: 'M',
-        minHeightFt: 5,
-        minHeightInch: 0,
-        maxHeightFt: 6,
-        maxHeightInch: 0,
+        type: '',
+        size: '',
+        minHeightFt: '',
+        minHeightInch: '',
+        maxHeightFt: '',
+        maxHeightInch: '',
         inventoryCount: 0,
         dailyRate: 0,
         weeklyRate: 0,
@@ -64,6 +64,35 @@ const ManageProduct = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+        
+        if (name === 'category') {
+            // Auto-handle fields when category changes
+            if (value !== 'Cycle') {
+                setFormData(prev => ({
+                    ...prev,
+                    category: value,
+                    type: value, // Default type to category name for non-cycles
+                    size: 'Universal', // Default size to Universal
+                    minHeightFt: 0,
+                    minHeightInch: 0,
+                    maxHeightFt: 0,
+                    maxHeightInch: 0
+                }));
+            } else {
+                setFormData(prev => ({
+                    ...prev,
+                    category: value,
+                    type: '', // Reset for cycle so user must pick
+                    size: '',
+                    minHeightFt: 5,
+                    minHeightInch: 0,
+                    maxHeightFt: 6,
+                    maxHeightInch: 0
+                }));
+            }
+            return;
+        }
+
         if (name.startsWith('weeklyExtraRates.')) {
             const day = name.split('.')[1];
             setFormData(prev => ({
@@ -237,23 +266,29 @@ const ManageProduct = () => {
                         <Ruler size={16}/> Specifications & Customization
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="space-y-2">
-                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Bike Type</label>
-                            <select name="type" value={formData.type} onChange={handleChange} className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-bold">
-                                <option value="MTB">MTB</option>
-                                <option value="Road Bike">Road Bike</option>
-                                <option value="Hybrid">Hybrid</option>
-                                <option value="Electric">Electric</option>
-                                <option value="Kids 3 To 6 Years">Kids 3 To 6 Years</option>
-                                <option value="Kids 6 To 10 Years">Kids 6 To 10 Years</option>
-                            </select>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Frame Size</label>
-                            <select name="size" value={formData.size} onChange={handleChange} className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-bold">
-                                {['S', 'M', 'L', 'XL', 'Universal', 'Kids1-3', 'Kids3-6', 'Kids6-10'].map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                        </div>
+                        {formData.category === 'Cycle' && (
+                            <>
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Bike Type</label>
+                                    <select name="type" value={formData.type} onChange={handleChange} className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-bold" required>
+                                        <option value="">Select Type</option>
+                                        <option value="MTB">MTB</option>
+                                        <option value="Road Bike">Road Bike</option>
+                                        <option value="Hybrid">Hybrid</option>
+                                        <option value="Electric">Electric</option>
+                                        <option value="Kids 3 To 6 Years">Kids 3 To 6 Years</option>
+                                        <option value="Kids 6 To 10 Years">Kids 6 To 10 Years</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Frame Size</label>
+                                    <select name="size" value={formData.size} onChange={handleChange} className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none font-bold" required>
+                                        <option value="">Select Size</option>
+                                        {['S', 'M', 'L', 'XL', 'Universal', 'Kids1-3', 'Kids3-6', 'Kids6-10'].map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                            </>
+                        )}
                         <div className="space-y-2">
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Inventory Count</label>
                             <div className="flex items-center gap-2">
@@ -263,27 +298,29 @@ const ManageProduct = () => {
                         </div>
                     </div>
 
-                    <div className="bg-blue-50/50 p-6 rounded-3xl space-y-4">
-                        <h4 className="text-xs font-black text-blue-900 uppercase">Rider Height Range</h4>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div>
-                                <label className="block text-[10px] font-black text-blue-400 uppercase mb-1">Min Height (Ft)</label>
-                                <input name="minHeightFt" type="number" value={formData.minHeightFt === 0 && formData.minHeightFt !== '' ? '' : formData.minHeightFt} placeholder="0" onChange={handleChange} className="w-full p-3 bg-white border border-blue-100 rounded-xl outline-none" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-black text-blue-400 uppercase mb-1">Min Height (In)</label>
-                                <input name="minHeightInch" type="number" value={formData.minHeightInch === 0 && formData.minHeightInch !== '' ? '' : formData.minHeightInch} placeholder="0" onChange={handleChange} className="w-full p-3 bg-white border border-blue-100 rounded-xl outline-none" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-black text-blue-400 uppercase mb-1">Max Height (Ft)</label>
-                                <input name="maxHeightFt" type="number" value={formData.maxHeightFt === 0 && formData.maxHeightFt !== '' ? '' : formData.maxHeightFt} placeholder="0" onChange={handleChange} className="w-full p-3 bg-white border border-blue-100 rounded-xl outline-none" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-black text-blue-400 uppercase mb-1">Max Height (In)</label>
-                                <input name="maxHeightInch" type="number" value={formData.maxHeightInch === 0 && formData.maxHeightInch !== '' ? '' : formData.maxHeightInch} placeholder="0" onChange={handleChange} className="w-full p-3 bg-white border border-blue-100 rounded-xl outline-none" />
+                    {formData.category === 'Cycle' && (
+                        <div className="bg-blue-50/50 p-6 rounded-3xl space-y-4">
+                            <h4 className="text-xs font-black text-blue-900 uppercase">Rider Height Range</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-blue-400 uppercase mb-1">Min Height (Ft)</label>
+                                    <input name="minHeightFt" type="number" value={formData.minHeightFt === 0 && formData.minHeightFt !== '' ? '' : formData.minHeightFt} placeholder="0" onChange={handleChange} className="w-full p-3 bg-white border border-blue-100 rounded-xl outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-blue-400 uppercase mb-1">Min Height (In)</label>
+                                    <input name="minHeightInch" type="number" value={formData.minHeightInch === 0 && formData.minHeightInch !== '' ? '' : formData.minHeightInch} placeholder="0" onChange={handleChange} className="w-full p-3 bg-white border border-blue-100 rounded-xl outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-blue-400 uppercase mb-1">Max Height (Ft)</label>
+                                    <input name="maxHeightFt" type="number" value={formData.maxHeightFt === 0 && formData.maxHeightFt !== '' ? '' : formData.maxHeightFt} placeholder="0" onChange={handleChange} className="w-full p-3 bg-white border border-blue-100 rounded-xl outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-blue-400 uppercase mb-1">Max Height (In)</label>
+                                    <input name="maxHeightInch" type="number" value={formData.maxHeightInch === 0 && formData.maxHeightInch !== '' ? '' : formData.maxHeightInch} placeholder="0" onChange={handleChange} className="w-full p-3 bg-white border border-blue-100 rounded-xl outline-none" />
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* 3. Pricing & Bridge Rates */}

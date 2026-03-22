@@ -105,10 +105,12 @@ const ProductList = () => {
                                         <Package size={14} className="text-gray-400" />
                                         Stock: {product.inventoryCount}
                                     </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <Tag size={14} className="text-gray-400" />
-                                        Size: {product.size}
-                                    </div>
+                                    {(product.category === 'Cycle' || (product.size && product.size !== 'Universal')) && (
+                                        <div className="flex items-center gap-1.5">
+                                            <Tag size={14} className="text-gray-400" />
+                                            Size: {product.size}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
