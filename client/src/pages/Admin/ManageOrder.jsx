@@ -66,7 +66,7 @@ const ManageOrder = () => {
         const loadData = async () => {
             try {
                 const [products, order] = await Promise.all([
-                    productService.getAll(),
+                    productService.getAll(true),
                     orderService.getById(id)
                 ]);
 

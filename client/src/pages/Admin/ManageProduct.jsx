@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
     ArrowLeft, Save, Bike, Trash2, Sliders, DollarSign, 
     Image as ImageIcon, Info, Ruler, AlertCircle, ShoppingBag,
-    RefreshCw, Hammer
+    RefreshCw, Hammer, Eye, EyeOff
 } from 'lucide-react';
 import { productService } from '../../services/productService';
 
@@ -37,7 +37,8 @@ const ManageProduct = () => {
             day1: 0, day2: 0, day3: 0, day4: 0, day5: 0, day6: 0
         },
         imageUrls: [],
-        specifications: []
+        specifications: [],
+        enableDisplay: true
     });
 
     useEffect(() => {
@@ -107,7 +108,7 @@ const ManageProduct = () => {
                 ...prev, 
                 [name]: ['dailyRate', 'weeklyRate', 'monthlyRate', 'securityDeposit', 'inventoryCount', 'minHeightFt', 'minHeightInch', 'maxHeightFt', 'maxHeightInch'].includes(name) 
                     ? (value === '' ? '' : Number(value))
-                    : value
+                    : (e.target.type === 'checkbox' ? e.target.checked : value)
             }));
         }
     };
@@ -210,9 +211,33 @@ const ManageProduct = () => {
             <form onSubmit={handleSave} className="max-w-5xl mx-auto p-6 space-y-8">
                 {/* 1. Basic Identity */}
                 <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 shadow-sm space-y-6">
-                    <h2 className="text-sm font-black text-blue-600 uppercase tracking-[0.2em] flex items-center gap-2">
-                        <Info size={16}/> Basic Information
-                    </h2>
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-sm font-black text-blue-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <Info size={16}/> Basic Information
+                        </h2>
+                        
+                        {/* Visibility Toggle */}
+                        <label className="flex items-center gap-3 cursor-pointer group bg-gray-50 px-4 py-2 rounded-2xl border border-gray-200 hover:bg-gray-100 transition">
+                            <div className="relative flex items-center">
+                                <input 
+                                    type="checkbox" 
+                                    name="enableDisplay"
+                                    checked={formData.enableDisplay !== false} // Handle legacy products gracefully
+                                    onChange={handleChange}
+                                    className="sr-only" 
+                                />
+                                <div className={`w-10 h-5 rounded-full shadow-inner transition-colors ${formData.enableDisplay !== false ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                                <div className={`absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition-transform ${formData.enableDisplay !== false ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                            </div>
+                            <span className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
+                                {formData.enableDisplay !== false ? (
+                                    <><Eye size={14} className="text-blue-600" /> <span className="text-gray-900">Visible</span></>
+                                ) : (
+                                    <><EyeOff size={14} className="text-gray-400" /> <span className="text-gray-500">Hidden</span></>
+                                )}
+                            </span>
+                        </label>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Product Name</label>

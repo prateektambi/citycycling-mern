@@ -7,7 +7,11 @@ const router = express.Router();
 // @access  Public
 router.get('/', async (req, res) => {
     try {
-        const products = await Product.find().sort({ createdAt: -1 });
+        let filter = {};
+        if (req.query.admin !== 'true') {
+            filter.enableDisplay = { $ne: false }; // This allows missing fields to mean true as well
+        }
+        const products = await Product.find(filter).sort({ createdAt: -1 });
         res.json(products);
     } catch (err) {
         console.error(err.message);
@@ -24,6 +28,12 @@ router.get('/:slug', async (req, res) => {
         if (!product) {
             return res.status(404).json({ msg: 'Product not found' });
         }
+        
+        // Hide disabled products from public view (slug route is primarily public)
+        if (product.enableDisplay === false && req.query.admin !== 'true') {
+             return res.status(404).json({ msg: 'Product not found or unavailable' });
+        }
+
         res.json(product);
     } catch (err) {
         console.error(err.message);

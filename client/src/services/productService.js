@@ -2,8 +2,9 @@ import API from '../api/axiosConfig';
 
 export const productService = {
     // Get all products
-    getAll: async () => {
-        const response = await API.get('/api/products');
+    getAll: async (isAdmin = false) => {
+        const queryParams = isAdmin ? '?admin=true' : '';
+        const response = await API.get(`/api/products${queryParams}`);
         return response.data;
     },
 

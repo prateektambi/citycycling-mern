@@ -33,7 +33,7 @@ const CreateOrder = () => {
     const [searchStatus, setSearchStatus] = useState({ type: '', message: '' });
 
     useEffect(() => {
-        productService.getAll().then(data => setAvailableProducts(data || []));
+        productService.getAll(true).then(data => setAvailableProducts(data || []));
     }, []);
 
     // --- RENTAL CALCULATION LOGIC ---

@@ -15,7 +15,7 @@ const ProductList = () => {
 
     const fetchProducts = async () => {
         try {
-            const data = await productService.getAll();
+            const data = await productService.getAll(true); // admin = true
             setProducts(data || []);
             setLoading(false);
         } catch (err) {
@@ -84,7 +84,12 @@ const ProductList = () => {
                                 <div>
                                     <div className="flex justify-between items-start mb-1">
                                         <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">{product.type}</span>
-                                        <span className="text-[10px] font-mono text-gray-400">{product.productCode}</span>
+                                        <div className="flex items-center gap-2">
+                                            {product.enableDisplay === false && (
+                                                <span className="text-[9px] font-black bg-red-100 text-red-600 px-2 py-0.5 rounded-full uppercase tracking-widest">Hidden</span>
+                                            )}
+                                            <span className="text-[10px] font-mono text-gray-400">{product.productCode}</span>
+                                        </div>
                                     </div>
                                     <h3 className="font-black text-gray-900 text-lg uppercase leading-tight">{product.name}</h3>
                                 </div>

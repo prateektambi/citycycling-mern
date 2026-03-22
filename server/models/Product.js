@@ -118,6 +118,11 @@ const ProductSchema = new mongoose.Schema({
         default: {}
     },
 
+    enableDisplay: {
+        type: Boolean,
+        default: true
+    },
+
     createdAt: {
         type: Date,
         default: Date.now
