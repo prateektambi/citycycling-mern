@@ -88,6 +88,7 @@ const ProductList = () => {
                                             {product.enableDisplay === false && (
                                                 <span className="text-[9px] font-black bg-red-100 text-red-600 px-2 py-0.5 rounded-full uppercase tracking-widest">Hidden</span>
                                             )}
+                                            <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded" title="Display Order">Ord: {product.displayOrder || 0}</span>
                                             <span className="text-[10px] font-mono text-gray-400">{product.productCode}</span>
                                         </div>
                                     </div>

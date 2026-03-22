@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
         if (req.query.admin !== 'true') {
             filter.enableDisplay = { $ne: false }; // This allows missing fields to mean true as well
         }
-        const products = await Product.find(filter).sort({ createdAt: -1 });
+        const products = await Product.find(filter).sort({ displayOrder: 1, createdAt: -1 });
         res.json(products);
     } catch (err) {
         console.error(err.message);

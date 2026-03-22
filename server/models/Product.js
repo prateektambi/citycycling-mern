@@ -123,6 +123,11 @@ const ProductSchema = new mongoose.Schema({
         default: true
     },
 
+    displayOrder: {
+        type: Number,
+        default: 100
+    },
+
     createdAt: {
         type: Date,
         default: Date.now

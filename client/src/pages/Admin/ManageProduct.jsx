@@ -38,7 +38,8 @@ const ManageProduct = () => {
         },
         imageUrls: [],
         specifications: [],
-        enableDisplay: true
+        enableDisplay: true,
+        displayOrder: 100
     });
 
     useEffect(() => {
@@ -106,7 +107,7 @@ const ManageProduct = () => {
         } else {
             setFormData(prev => ({
                 ...prev, 
-                [name]: ['dailyRate', 'weeklyRate', 'monthlyRate', 'securityDeposit', 'inventoryCount', 'minHeightFt', 'minHeightInch', 'maxHeightFt', 'maxHeightInch'].includes(name) 
+                [name]: ['dailyRate', 'weeklyRate', 'monthlyRate', 'securityDeposit', 'inventoryCount', 'minHeightFt', 'minHeightInch', 'maxHeightFt', 'maxHeightInch', 'displayOrder'].includes(name) 
                     ? (value === '' ? '' : Number(value))
                     : (e.target.type === 'checkbox' ? e.target.checked : value)
             }));
@@ -273,6 +274,14 @@ const ManageProduct = () => {
                                 <option value="Accessory">Accessory</option>
                                 <option value="Service">Service</option>
                             </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Display Order</label>
+                            <input 
+                                name="displayOrder" type="number" value={formData.displayOrder === 0 && formData.displayOrder !== '' ? '' : formData.displayOrder} onChange={handleChange}
+                                className="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-100 outline-none transition font-bold"
+                                placeholder="0"
+                            />
                         </div>
                     </div>
                     <div className="space-y-2">
