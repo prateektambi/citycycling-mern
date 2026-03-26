@@ -306,8 +306,10 @@ exports.updateOrder = async (req, res) => {
         console.log(`[updateOrder] Availability checks passed.`);
 
         // 3. Perform Update
-        console.log(`[updateOrder] Updating document in database...`);
-        const updateFields = { 
+        console.log(`[updateOrder] Updating document in database for Order ID: ${orderIdStr}`);
+        console.log(`[updateOrder] Received createdAt to save: ${createdAt}`);
+
+        const updateObj = { 
             customer, 
             bookings, 
             logistics, 
@@ -316,13 +318,17 @@ exports.updateOrder = async (req, res) => {
         };
 
         if (createdAt) {
-            updateFields.createdAt = createdAt;
+            updateObj.createdAt = new Date(createdAt);
         }
 
         const updatedOrder = await Order.findOneAndUpdate(
             { orderId: orderIdStr },
-            { $set: updateFields },
-            { new: true, session }
+            { $set: updateObj },
+            { 
+                new: true, 
+                session,
+                timestamps: false // Crucial: Allow manual createdAt update
+            }
         );
 
         console.log(`[updateOrder] Update successful. Committing transaction...`);

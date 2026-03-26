@@ -332,6 +332,7 @@ const ManageOrder = () => {
         };
 
         try {
+            console.log("Saving order with data:", JSON.stringify(finalData, null, 2));
             await orderService.update(id, finalData);
             alert("Order updated successfully!");
             navigate('/admin/orders');
