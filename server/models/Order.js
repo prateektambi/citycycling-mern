@@ -149,7 +149,7 @@ const OrderSchema = new mongoose.Schema({
     inventoryBlockedAt: { type: Date },
     allowPartialRates: {
         type: Boolean,
-        default: true
+        default: false
     },
     createdAt: { type: Date, immutable: false },
     updatedAt: { type: Date }

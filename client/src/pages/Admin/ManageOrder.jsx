@@ -59,7 +59,7 @@ const ManageOrder = () => {
         },
         orderStatus: 'On-Hold',
         tags: [],
-        allowPartialRates: true
+        allowPartialRates: false
     });
 
     useEffect(() => {

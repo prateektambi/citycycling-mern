@@ -26,7 +26,7 @@ const CreateOrder = () => {
             paymentStatus: 'Unpaid'
         },
         orderStatus: 'Pending',
-        allowPartialRates: true
+        allowPartialRates: false
     });
     const [searchEmail, setSearchEmail] = useState('');
     const [searchLoading, setSearchLoading] = useState(false);

@@ -192,7 +192,8 @@ const CartPage = () => {
             const result = await orderService.create({
                 customer: customerData,
                 bookings: bookingData,
-                logistics: logisticsData
+                logistics: logisticsData,
+                allowPartialRates: false
             });
 
             setOrderResult(result.order || result);
