@@ -150,8 +150,9 @@ const OrderSchema = new mongoose.Schema({
     allowPartialRates: {
         type: Boolean,
         default: true
-    }
-
+    },
+    createdAt: { type: Date, immutable: false },
+    updatedAt: { type: Date }
 }, { timestamps: true });
 
 // Method to add activity log entry
