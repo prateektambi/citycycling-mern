@@ -142,6 +142,19 @@ exports.createOrder = async (req, res) => {
             }
         }
 
+        // Ensure customer email is present for notifications
+        if (!customer.email && req.user) {
+            try {
+                const user = await User.findById(req.user.id);
+                if (user && user.email) {
+                    customer.email = user.email;
+                    console.log(`[createOrder] Populated customer email from user profile: ${customer.email}`);
+                }
+            } catch (err) {
+                console.error('[createOrder] Failed to fetch user email for notification:', err.message);
+            }
+        }
+
         const newOrder = new Order({
             orderId,
             user: userId,
@@ -181,8 +194,24 @@ exports.createOrder = async (req, res) => {
         // Send WhatsApp notification
         await sendWhatsAppMessage(savedOrder, 'order_created');
 
-        // Send Email notification to Admins (fire-and-forget)
-        sendAdminOrderNotification(savedOrder, 'created').catch(err => console.error(err));
+        // Send Email notifications
+        const { sendOrderConfirmationEmail } = require('../services/emailService');
+        
+        // 1. Send to Customer
+        if (savedOrder.customer?.email) {
+            const customerObj = { 
+                email: savedOrder.customer.email, 
+                profile: { name: savedOrder.customer.name } 
+            };
+            sendOrderConfirmationEmail(customerObj, savedOrder).catch(err => 
+                console.error(`[EmailService] Customer notification failed:`, err.message)
+            );
+        }
+
+        // 2. Send to Admins (fire-and-forget)
+        sendAdminOrderNotification(savedOrder, 'created').catch(err => 
+            console.error(`[EmailHelper] Admin notification failed:`, err.message)
+        );
 
         res.status(201).json({ success: true, order: savedOrder });
 

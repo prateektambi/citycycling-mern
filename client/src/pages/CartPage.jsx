@@ -148,6 +148,7 @@ const CartPage = () => {
 
             const customerData = {
                 name: customerName,
+                email: user.email,
                 phone: customerPhone,
                 address: customerAddress,
                 pincode: customerPincode

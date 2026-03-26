@@ -10,13 +10,21 @@ const sendAdminOrderNotification = async (order, action) => {
     try {
         const adminEmailsStr = process.env.ADMIN_EMAILS;
         if (!adminEmailsStr) {
-            console.log('[EmailHelper] ADMIN_EMAILS not set in .env. Skipping admin notification.');
+            console.warn('[EmailHelper] ADMIN_EMAILS not set in environment. Skipping admin notification.');
             return;
         }
 
         // Parse comma-separated emails
         const adminEmails = adminEmailsStr.split(',').map(e => e.trim()).filter(e => e);
-        if (adminEmails.length === 0) return;
+        if (adminEmails.length === 0) {
+            console.warn('[EmailHelper] ADMIN_EMAILS is empty. Skipping notification.');
+            return;
+        }
+
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+            console.error('[EmailHelper] EMAIL_USER or EMAIL_PASSWORD not set. Cannot send notification.');
+            return;
+        }
 
         const transporter = createTransporter();
         const customerName = order.customer?.name || 'Customer';
@@ -75,10 +83,11 @@ const sendAdminOrderNotification = async (order, action) => {
             html: html
         };
 
+        console.log(`[EmailHelper] Attempting to send admin notification to: ${adminEmails.join(', ')}`);
         const info = await transporter.sendMail(mailOptions);
-        console.log(`[EmailHelper] Admin notification sent for order ${orderId} (${action}) - MessageId: ${info.messageId}`);
+        console.log(`[EmailHelper] ✅ Admin notification sent for order ${orderId} (${action}) - MessageId: ${info.messageId}`);
     } catch (error) {
-        console.error(`[EmailHelper] Failed to send admin notification for order ${order.orderId}:`, error.message);
+        console.error(`[EmailHelper] ❌ Failed to send admin notification for order ${order.orderId}:`, error);
     }
 };
 
