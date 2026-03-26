@@ -251,7 +251,7 @@ exports.updateOrder = async (req, res) => {
     session.startTransaction();
     
     try {
-        let { customer, bookings, logistics, financials } = req.body;
+        let { customer, bookings, logistics, financials, createdAt } = req.body;
         const orderIdStr = req.params.id; // e.g., ORD-123456
 
         // Filter out empty bookings
@@ -307,17 +307,21 @@ exports.updateOrder = async (req, res) => {
 
         // 3. Perform Update
         console.log(`[updateOrder] Updating document in database...`);
+        const updateFields = { 
+            customer, 
+            bookings, 
+            logistics, 
+            financials,
+            updatedAt: Date.now() 
+        };
+
+        if (createdAt) {
+            updateFields.createdAt = createdAt;
+        }
+
         const updatedOrder = await Order.findOneAndUpdate(
             { orderId: orderIdStr },
-            { 
-                $set: { 
-                    customer, 
-                    bookings, 
-                    logistics, 
-                    financials,
-                    updatedAt: Date.now() 
-                } 
-            },
+            { $set: updateFields },
             { new: true, session }
         );
 

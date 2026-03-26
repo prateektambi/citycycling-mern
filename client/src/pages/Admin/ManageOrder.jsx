@@ -395,7 +395,22 @@ const ManageOrder = () => {
                     </span>
                     <div className="flex flex-col items-end">
                         <div className="text-xs font-mono bg-gray-100 p-2 rounded border font-bold text-gray-600 leading-none">{orderData.orderId}</div>
-                        {orderData.createdAt && <span className="text-[10px] text-gray-400 font-bold mt-1">Placed: {new Date(orderData.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(orderData.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>}
+                        {orderData.createdAt && (
+                            <div className="flex flex-col items-end mt-1">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Order Date</span>
+                                <input 
+                                    type="datetime-local" 
+                                    className="text-[10px] font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 outline-none focus:border-blue-400"
+                                    value={new Date(new Date(orderData.createdAt).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)}
+                                    onChange={(e) => {
+                                        const newDate = new Date(e.target.value);
+                                        if(!isNaN(newDate.getTime())) {
+                                            setOrderData(prev => ({...prev, createdAt: newDate.toISOString()}));
+                                        }
+                                    }}
+                                />
+                            </div>
+                        )}
                     </div>
                     <button 
                         onClick={() => window.open(`/orders/${orderData.orderId}/receipt`, '_blank')}
