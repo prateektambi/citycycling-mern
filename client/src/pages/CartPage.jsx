@@ -32,13 +32,13 @@ const CartPage = () => {
     const [returnType, setReturnType] = useState('Self-Drop');
     const [deliveryCost, setDeliveryCost] = useState(0);
     const [returnCost, setReturnCost] = useState(0);
-    
+
     // Customer Info
     const [customerName, setCustomerName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
     const [customerAddress, setCustomerAddress] = useState('');
     const [customerPincode, setCustomerPincode] = useState('');
-    
+
     // ── UI State ──
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState('');
@@ -54,7 +54,7 @@ const CartPage = () => {
                 if (data.profile) {
                     setCustomerName(data.profile.name || user.name || '');
                     setCustomerPhone(data.profile.phone || '');
-                    
+
                     if (data.profile.address) {
                         const addrParts = [];
                         if (data.profile.address.street) addrParts.push(data.profile.address.street);
@@ -64,11 +64,11 @@ const CartPage = () => {
                         setCustomerPincode(data.profile.address.pincode || '');
                     }
                 }
-            }).catch(() => {});
+            }).catch(() => { });
         } else {
             navigate('/login?redirect=/cart');
         }
-        
+
         // Refresh cart on mount to ensure availability check is up to date
         refreshCart();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -91,9 +91,9 @@ const CartPage = () => {
                     if (returnType === 'Home-Collection') setReturnCost(0);
                 });
         } else if (customerPincode.length !== 6) {
-           setShippingLookup(null);
-           if (deliveryType === 'Home-Delivery') setDeliveryCost(0);
-           if (returnType === 'Home-Collection') setReturnCost(0);
+            setShippingLookup(null);
+            if (deliveryType === 'Home-Delivery') setDeliveryCost(0);
+            if (returnType === 'Home-Collection') setReturnCost(0);
         }
     }, [customerPincode, deliveryType, returnType]);
 
@@ -113,7 +113,7 @@ const CartPage = () => {
         let rental = 0;
         let deposit = 0;
         let hasIssue = false;
-        
+
         cart.items?.forEach(item => {
             rental += item.totalRental;
             if (item.product?.securityDeposit) {
@@ -121,7 +121,7 @@ const CartPage = () => {
             }
             if (!item.isAvailable) hasIssue = true;
         });
-        
+
         return { totalRental: rental, totalDeposit: deposit, hasAvailabilityIssues: hasIssue };
     }, [cart.items]);
 
@@ -136,7 +136,7 @@ const CartPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!user) return;
-        
+
         setIsSubmitting(true);
         setSubmitError('');
 
@@ -171,8 +171,8 @@ const CartPage = () => {
             let earliestStart = new Date();
             let latestEnd = new Date();
             if (cart.items.length > 0) {
-               earliestStart = new Date(Math.min(...cart.items.map(i => new Date(i.startDate))));
-               latestEnd = new Date(Math.max(...cart.items.map(i => new Date(i.endDate))));
+                earliestStart = new Date(Math.min(...cart.items.map(i => new Date(i.startDate))));
+                latestEnd = new Date(Math.max(...cart.items.map(i => new Date(i.endDate))));
             }
 
             const logisticsData = {
@@ -206,7 +206,7 @@ const CartPage = () => {
 
     // ── Copy UPI ID ──
     const copyUPI = () => {
-        navigator.clipboard.writeText('citycycling@upi');
+        navigator.clipboard.writeText('citycycling.in-3.@okicici');
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
@@ -250,7 +250,7 @@ const CartPage = () => {
                             <ShieldCheck size={20} className="text-orange-600" />
                             <h4 className="font-black text-orange-900 text-sm uppercase tracking-tight">Security Deposit</h4>
                         </div>
-                        
+
                         <div className="text-sm text-orange-800/80 font-medium mb-2 border-l-2 border-orange-300 pl-3">
                             <p className="mb-1"><strong>Remember:</strong> This is a fully refundable deposit.</p>
                             <p>Your rental charges will be deducted from this amount at the end of the rental period. The balance will be refunded upon return.</p>
@@ -272,11 +272,9 @@ const CartPage = () => {
 
                         {/* Bank Details */}
                         <div className="bg-white rounded-xl p-4 border border-orange-100 space-y-2">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Bank Transfer</p>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Gpay/PhonePe</p>
                             <div className="text-sm text-gray-700 font-medium space-y-1">
-                                <p><span className="text-gray-400">A/C:</span> <span className="font-bold text-gray-900">1234567890</span></p>
-                                <p><span className="text-gray-400">IFSC:</span> <span className="font-bold text-gray-900">SBIN0001234</span></p>
-                                <p><span className="text-gray-400">Name:</span> <span className="font-bold text-gray-900">City Cycling</span></p>
+                                <p><span className="text-gray-400">A/C:</span> <span className="font-bold text-gray-900">8971552453</span></p>
                             </div>
                         </div>
                     </div>
@@ -288,7 +286,7 @@ const CartPage = () => {
                     >
                         View My Orders <ArrowRight size={18} />
                     </button>
-                 </div>
+                </div>
             </div>
         );
     }
@@ -297,9 +295,9 @@ const CartPage = () => {
     if (cartCount === 0) {
         return (
             <div className="container mx-auto px-4 py-16 max-w-4xl text-left">
-                 <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight mb-8">Your Cart</h1>
-                 
-                 <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-[0_30px_80px_rgba(0,0,0,0.06)] p-12 text-center flex flex-col items-center">
+                <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight mb-8">Your Cart</h1>
+
+                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-[0_30px_80px_rgba(0,0,0,0.06)] p-12 text-center flex flex-col items-center">
                     <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-6">
                         <ShoppingCart size={40} />
                     </div>
@@ -307,13 +305,13 @@ const CartPage = () => {
                     <p className="text-gray-500 font-medium mb-8 max-w-sm">
                         You have no cycles in your cart. Head over to our catalogue to find your perfect ride!
                     </p>
-                    <Link 
+                    <Link
                         to="/catalogue"
                         className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black transition-all hover:-translate-y-1 shadow-lg shadow-blue-600/20"
                     >
                         Browse Catalogue
                     </Link>
-                 </div>
+                </div>
             </div>
         )
     }
@@ -325,28 +323,28 @@ const CartPage = () => {
             </h1>
 
             <div className="flex flex-col lg:flex-row gap-8">
-                
+
                 {/* ── LEFT COLUMN: Cart Items + Customer Form ── */}
                 <div className="w-full lg:w-2/3 space-y-8">
-                    
+
                     {/* Items List */}
                     <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-[0_30px_80px_rgba(0,0,0,0.06)] p-8">
                         <h2 className="text-xl font-black text-gray-900 border-b border-gray-100 pb-4 mb-6 uppercase">Bookings ({cartCount})</h2>
-                        
+
                         <div className="space-y-6">
                             {cart.items.map((item) => (
                                 <div key={item._id} className="flex flex-col sm:flex-row gap-5 p-5 bg-gray-50 rounded-2xl border border-gray-100 relative">
-                                    <button 
+                                    <button
                                         onClick={() => removeFromCart(item._id)}
                                         className="absolute top-4 right-4 text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition-colors"
                                         title="Remove item"
                                     >
                                         <Trash2 size={18} />
                                     </button>
-                                    
+
                                     <div className="w-full sm:w-32 h-24 bg-white rounded-xl border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
                                         {item.product.imageUrl ? (
-                                             <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+                                            <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
                                         ) : (
                                             <Bike className="text-gray-300" size={32} />
                                         )}
@@ -359,7 +357,7 @@ const CartPage = () => {
                                             </span>
                                         </div>
                                         <h3 className="font-black text-gray-900 text-lg mb-2">{item.product.name}</h3>
-                                        
+
                                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm text-gray-600 font-medium">
                                             <div className="flex items-center gap-1.5 border border-gray-200 bg-white px-3 py-1.5 rounded-lg text-xs md:text-sm">
                                                 <CalendarDays size={14} className="text-blue-500" />
@@ -370,14 +368,14 @@ const CartPage = () => {
                                                 {item.rentalLabel}
                                             </div>
                                             <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-1">
-                                                <button 
-                                                    type="button" 
+                                                <button
+                                                    type="button"
                                                     onClick={() => updateQuantity(item._id, Math.max(1, (item.quantity || 1) - 1))}
                                                     className="w-6 h-6 flex items-center justify-center rounded bg-gray-50 hover:bg-gray-100 text-gray-600"
                                                 >-</button>
                                                 <span className="text-xs font-bold w-4 text-center">{item.quantity || 1}</span>
-                                                <button 
-                                                    type="button" 
+                                                <button
+                                                    type="button"
                                                     onClick={() => updateQuantity(item._id, (item.quantity || 1) + 1)}
                                                     className="w-6 h-6 flex items-center justify-center rounded bg-gray-50 hover:bg-gray-100 text-gray-600"
                                                 >+</button>
@@ -394,7 +392,7 @@ const CartPage = () => {
                                                     <AlertCircle size={14} /> Not Available on {formatDate(item.unavailableDate)}
                                                 </div>
                                             )}
-                                            
+
                                             <div className="text-right">
                                                 <div className="text-[10px] uppercase tracking-widest text-gray-400 font-black mb-0.5">Rental</div>
                                                 <div className="text-xl font-black text-gray-900">₹{item.totalRental}</div>
@@ -411,7 +409,7 @@ const CartPage = () => {
                         <h2 className="text-xl font-black text-gray-900 border-b border-gray-100 pb-4 mb-6 uppercase flex items-center gap-2">
                             <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">1</span> Customer Details
                         </h2>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Full Name *</label>
@@ -460,11 +458,10 @@ const CartPage = () => {
                                     <button
                                         type="button"
                                         onClick={() => setDeliveryType('Self-Pickup')}
-                                        className={`p-4 rounded-xl border-2 text-center transition-all flex flex-col items-center gap-2 ${
-                                            deliveryType === 'Self-Pickup'
-                                                ? 'border-blue-500 bg-blue-50/50 text-blue-900'
-                                                : 'border-gray-100 text-gray-500 hover:border-gray-200'
-                                        }`}
+                                        className={`p-4 rounded-xl border-2 text-center transition-all flex flex-col items-center gap-2 ${deliveryType === 'Self-Pickup'
+                                            ? 'border-blue-500 bg-blue-50/50 text-blue-900'
+                                            : 'border-gray-100 text-gray-500 hover:border-gray-200'
+                                            }`}
                                     >
                                         <div className="font-bold text-sm">Self Pickup</div>
                                         <div className="text-[10px] font-black text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-1 rounded border border-emerald-100">FREE</div>
@@ -472,11 +469,10 @@ const CartPage = () => {
                                     <button
                                         type="button"
                                         onClick={() => setDeliveryType('Home-Delivery')}
-                                        className={`p-4 rounded-xl border-2 text-center transition-all flex flex-col items-center gap-2 ${
-                                            deliveryType === 'Home-Delivery'
-                                                ? 'border-blue-500 bg-blue-50/50 text-blue-900'
-                                                : 'border-gray-100 text-gray-500 hover:border-gray-200'
-                                        }`}
+                                        className={`p-4 rounded-xl border-2 text-center transition-all flex flex-col items-center gap-2 ${deliveryType === 'Home-Delivery'
+                                            ? 'border-blue-500 bg-blue-50/50 text-blue-900'
+                                            : 'border-gray-100 text-gray-500 hover:border-gray-200'
+                                            }`}
                                     >
                                         <div className="font-bold text-sm">Home Delivery</div>
                                         {deliveryCost > 0 && <div className="text-[10px] font-black text-gray-600 uppercase tracking-wider bg-gray-100 px-2 py-1 rounded">₹{deliveryCost}</div>}
@@ -491,11 +487,10 @@ const CartPage = () => {
                                     <button
                                         type="button"
                                         onClick={() => setReturnType('Self-Drop')}
-                                        className={`p-4 rounded-xl border-2 text-center transition-all flex flex-col items-center gap-2 ${
-                                            returnType === 'Self-Drop'
-                                                ? 'border-blue-500 bg-blue-50/50 text-blue-900'
-                                                : 'border-gray-100 text-gray-500 hover:border-gray-200'
-                                        }`}
+                                        className={`p-4 rounded-xl border-2 text-center transition-all flex flex-col items-center gap-2 ${returnType === 'Self-Drop'
+                                            ? 'border-blue-500 bg-blue-50/50 text-blue-900'
+                                            : 'border-gray-100 text-gray-500 hover:border-gray-200'
+                                            }`}
                                     >
                                         <div className="font-bold text-sm">Self Drop</div>
                                         <div className="text-[10px] font-black text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-1 rounded border border-emerald-100">FREE</div>
@@ -503,11 +498,10 @@ const CartPage = () => {
                                     <button
                                         type="button"
                                         onClick={() => setReturnType('Home-Collection')}
-                                        className={`p-4 rounded-xl border-2 text-center transition-all flex flex-col items-center gap-2 ${
-                                            returnType === 'Home-Collection'
-                                                ? 'border-blue-500 bg-blue-50/50 text-blue-900'
-                                                : 'border-gray-100 text-gray-500 hover:border-gray-200'
-                                        }`}
+                                        className={`p-4 rounded-xl border-2 text-center transition-all flex flex-col items-center gap-2 ${returnType === 'Home-Collection'
+                                            ? 'border-blue-500 bg-blue-50/50 text-blue-900'
+                                            : 'border-gray-100 text-gray-500 hover:border-gray-200'
+                                            }`}
                                     >
                                         <div className="font-bold text-sm">Home Collection</div>
                                         {returnCost > 0 && <div className="text-[10px] font-black text-gray-600 uppercase tracking-wider bg-gray-100 px-2 py-1 rounded">₹{returnCost}</div>}
@@ -555,15 +549,15 @@ const CartPage = () => {
                             <h2 className="text-lg font-black text-orange-950 flex items-center gap-2 mb-4 uppercase tracking-tight">
                                 <ShieldCheck size={22} className="text-orange-500" /> Upfront Payable
                             </h2>
-                            
+
                             <div className="bg-white rounded-xl p-4 border border-orange-100 mb-6 relative overflow-hidden">
                                 <div className="absolute top-0 left-0 w-1 h-full bg-orange-400"></div>
                                 <h3 className="text-xs font-black text-orange-800 uppercase tracking-widest mb-1 flex items-center gap-1.5 ">
-                                    <Info size={12}/> How Deposit Works
+                                    <Info size={12} /> How Deposit Works
                                 </h3>
                                 <p className="text-[13px] text-gray-600 font-medium leading-relaxed">
-                                    This is a fully refundable security deposit. Your rental charges will be deducted from this amount at the end of the rental period. 
-                                    <br/><br/>
+                                    This is a fully refundable security deposit. Your rental charges will be deducted from this amount at the end of the rental period.
+                                    <br /><br />
                                     <strong>The balance will be refunded</strong> after you return the cycle(s).
                                 </p>
                             </div>
@@ -578,20 +572,20 @@ const CartPage = () => {
                         {/* Order Summary */}
                         <div className="bg-white rounded-[2rem] border border-gray-100 shadow-[0_30px_80px_rgba(0,0,0,0.06)] p-8">
                             <h2 className="text-lg font-black text-gray-900 border-b border-gray-100 pb-4 mb-5 uppercase tracking-tight">Order Summary</h2>
-                            
+
                             <div className="space-y-4">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-500 font-bold">Total Rental</span>
                                     <span className="text-gray-900 font-black text-lg">₹{totalRental}</span>
                                 </div>
-                                
+
                                 {(deliveryCost + returnCost) > 0 && (
                                     <div className="flex justify-between text-sm items-center pb-2">
-                                        <span className="text-gray-500 font-bold flex items-center gap-1.5"><Truck size={14}/> Logistics</span>
+                                        <span className="text-gray-500 font-bold flex items-center gap-1.5"><Truck size={14} /> Logistics</span>
                                         <span className="text-gray-900 font-black border border-gray-200 rounded px-2 py-0.5 shadow-sm text-sm">₹{deliveryCost + returnCost}</span>
                                     </div>
                                 )}
-                                
+
                                 <div className="bg-gray-50 -mx-8 px-8 py-4 border-t border-b border-gray-100 flex justify-between items-center my-2">
                                     <span className="text-gray-900 font-black">Total Expected Cost</span>
                                     <span className="text-2xl font-black text-gray-900">₹{totalRental + deliveryCost + returnCost}</span>
@@ -613,8 +607,8 @@ const CartPage = () => {
                             <button
                                 onClick={handleSubmit}
                                 disabled={
-                                    hasAvailabilityIssues || 
-                                    isSubmitting || 
+                                    hasAvailabilityIssues ||
+                                    isSubmitting ||
                                     (deliveryType === 'Home-Delivery' && (!shippingLookup || customerPincode.length !== 6)) ||
                                     !customerName || !customerPhone || !customerAddress
                                 }
@@ -626,7 +620,7 @@ const CartPage = () => {
                                     <>Place Order <ArrowRight size={18} /></>
                                 )}
                             </button>
-                            
+
                             {hasAvailabilityIssues && (
                                 <p className="text-center text-red-500 text-xs font-bold mt-3">
                                     Please remove unavailable items to continue.
