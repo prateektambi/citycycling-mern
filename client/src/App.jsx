@@ -33,6 +33,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
 import Unauthorized from './pages/Unauthorized';
 import ScrollToTop from './components/ScrollToTop';
+import Footer from './components/Footer';
 import GoogleOneTap from './components/GoogleOneTap';
 import { LinkedInCallback } from './components/LinkedInAuth';
 import './styles/App.css';
@@ -135,6 +136,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Route>
       </Routes>
+      {!isReceiptPage && <Footer />}
     </div>
   );
 }

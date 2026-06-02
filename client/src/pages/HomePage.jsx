@@ -103,7 +103,8 @@ const HomePage = () => {
             {/* Trust Stats Row */}
             <div className="bg-gray-50 border-y border-gray-100">
                 <div className="max-w-7xl mx-auto px-6 py-12 md:py-16">
-                    <div className="flex justify-center items-center">
+                    <div className="flex flex-col sm:flex-row justify-center items-center gap-8 sm:gap-16">
+                        {/* Google Rating */}
                         {stats.map((stat, i) => (
                             <div key={i} className="space-y-2 group">
                                 <div className="flex items-center justify-center gap-2 text-blue-600 mb-1">
@@ -113,6 +114,25 @@ const HomePage = () => {
                                 <div className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight">{stat.value}</div>
                             </div>
                         ))}
+
+                        {/* Divider */}
+                        <div className="hidden sm:block w-px h-16 bg-gray-200"></div>
+                        <div className="block sm:hidden w-32 h-px bg-gray-200"></div>
+
+                        {/* Find us on KAYAK */}
+                        <a 
+                            href="https://www.kayak.co.uk/Bengaluru.14559.guide" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="group flex flex-col items-center gap-2"
+                        >
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-blue-500 transition-colors">Find us on</span>
+                            <img 
+                                src="https://content.r9cdn.net/rimg/seo/badges/v1/DARK_LARGE_LOGO_KAYAK.png" 
+                                alt="Find us on KAYAK" 
+                                className="h-8 md:h-10 opacity-70 group-hover:opacity-100 transition-opacity duration-300"
+                            />
+                        </a>
                     </div>
                 </div>
             </div>
@@ -196,15 +216,6 @@ const HomePage = () => {
                 </div>
             </div>
 
-            {/* Footer Pricing Note */}
-            <div className="pb-16 text-center px-6">
-                <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.3em] opacity-60">
-                    Quality . Reliability . Freedom
-                </p>
-                <div className="mt-4 text-[10px] text-gray-300">
-                    &copy; {new Date().getFullYear()} CityCycling Bangalore. All rights reserved.
-                </div>
-            </div>
         </div>
     );
 };
