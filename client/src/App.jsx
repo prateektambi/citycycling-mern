@@ -42,13 +42,15 @@ import './styles/App.css';
 function App() {
   const location = useLocation();
   const isReceiptPage = location.pathname.includes('/receipt');
+  const isAdminPage = location.pathname.startsWith('/admin');
+  const showHeaderFooter = !isReceiptPage && !isAdminPage;
 
   return (
     <div className="flex flex-col min-h-screen">
       <ScrollToTop />
       <Analytics />
       <GoogleOneTap />
-      {!isReceiptPage && <Header />}
+      {showHeaderFooter && <Header />}
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
@@ -138,7 +140,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Route>
       </Routes>
-      {!isReceiptPage && <Footer />}
+      {showHeaderFooter && <Footer />}
     </div>
   );
 }
