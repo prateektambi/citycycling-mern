@@ -19,6 +19,7 @@ import ManageProduct from './pages/Admin/ManageProduct';
 import OrderReceipt from './pages/Admin/OrderReceipt';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import UserList from './pages/Admin/UserList';
+import QuotationGenerator from './pages/Admin/QuotationGenerator';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
@@ -122,6 +123,7 @@ function App() {
           <Route path="orders/new" element={<CreateOrder />} />
           <Route path="orders/:id" element={<ManageOrder />} />
           <Route path="users" element={<UserList />} />
+          <Route path="quotations" element={<QuotationGenerator />} />
           
           {/* Item Routes */}
           <Route path="items" element={<ItemList />} />

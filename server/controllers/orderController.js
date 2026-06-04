@@ -643,3 +643,190 @@ exports.generateWhatsApp = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+
+// === SEND QUOTATION EMAIL ===
+exports.sendQuotationEmail = async (req, res) => {
+    try {
+        const { toEmail, customerName, quoteNumber, quoteDate, items, transportation, other, notes } = req.body;
+        
+        if (!toEmail) {
+            return res.status(400).json({ success: false, message: 'Recipient email address (toEmail) is required.' });
+        }
+
+        const { createTransporter, emailConfig } = require('../config/emailConfig');
+        const transporter = createTransporter();
+
+        const formatCurrency = (amount) => `₹${(Number(amount) || 0).toLocaleString('en-IN')}`;
+
+        // Calculate totals
+        let totalRental = 0;
+        let totalDeposit = 0;
+
+        const itemsRows = items.map(item => {
+            const qty = Number(item.quantity) || 0;
+            const rate = Number(item.rate) || 0;
+            const deposit = Number(item.deposit) || 0;
+            
+            const rentalSubtotal = qty * rate;
+            const depositSubtotal = qty * deposit;
+            
+            totalRental += rentalSubtotal;
+            totalDeposit += depositSubtotal;
+
+            return `
+                <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${qty}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(rate)}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(rentalSubtotal)}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(deposit)} / cycle</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(depositSubtotal)}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const transportCost = Number(transportation) || 0;
+        const otherCost = Number(other) || 0;
+        const grandTotal = totalRental + totalDeposit + transportCost + otherCost;
+
+        const subject = `Rental Quotation ${quoteNumber ? `#${quoteNumber}` : ''} - CityCycling`;
+
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f5f7; }
+                    .container { max-width: 650px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+                    .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 30px 20px; text-align: center; }
+                    .header h1 { margin: 0; font-size: 26px; font-weight: 800; }
+                    .header p { margin: 5px 0 0 0; font-size: 14px; opacity: 0.9; text-transform: uppercase; tracking-spacing: 2px; }
+                    .content { padding: 30px 25px; }
+                    .intro { font-size: 16px; margin-bottom: 20px; }
+                    .table-wrapper { width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 25px; }
+                    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+                    th { background-color: #f8fafc; padding: 12px 10px; font-weight: 700; color: #475569; border-bottom: 1px solid #e5e7eb; }
+                    .financial-summary { margin-left: auto; width: 300px; margin-top: 15px; margin-bottom: 25px; font-size: 14px; }
+                    .financial-summary table { width: 100%; }
+                    .financial-summary td { padding: 6px 0; }
+                    .grand-total { font-size: 18px; font-weight: 800; color: #1d4ed8; }
+                    .notes-box { background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 6px; margin-bottom: 25px; font-size: 14px; }
+                    .payment-box { background-color: #f8fafc; border: 1px dashed #cbd5e1; padding: 20px; border-radius: 8px; margin-bottom: 25px; font-size: 14px; }
+                    .payment-box h3 { margin-top: 0; margin-bottom: 15px; color: #1e293b; font-size: 16px; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+                    .payment-details { line-height: 1.8; color: #334155; }
+                    .footer { text-align: center; padding: 25px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; }
+                    .footer p { margin: 5px 0; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>City Cycling</h1>
+                        <p>Cycles Rental Quotation</p>
+                    </div>
+                    <div class="content">
+                        <p class="intro">Hello ${customerName || 'Sir / Madam'},</p>
+                        <p class="intro">As discussed, please find below the cycles rental quotation for your reference.</p>
+                        
+                        <div style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
+                            <strong>Quotation No:</strong> ${quoteNumber || 'N/A'} &nbsp;|&nbsp; <strong>Date:</strong> ${quoteDate || new Date().toLocaleDateString('en-IN')}
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="padding: 10px;">Item</th>
+                                        <th style="padding: 10px; text-align: center;">Qty</th>
+                                        <th style="padding: 10px; text-align: right;">Rate</th>
+                                        <th style="padding: 10px; text-align: right;">Rental</th>
+                                        <th style="padding: 10px; text-align: right;">Refundable Deposit</th>
+                                        <th style="padding: 10px; text-align: right;">Deposit Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${itemsRows}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="financial-summary">
+                            <table>
+                                <tr>
+                                    <td>Rental Subtotal:</td>
+                                    <td style="text-align: right; font-weight: 700;">${formatCurrency(totalRental)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Refundable Security:</td>
+                                    <td style="text-align: right; font-weight: 700;">${formatCurrency(totalDeposit)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Transportation (Pick & Drop):</td>
+                                    <td style="text-align: right; font-weight: 700;">${formatCurrency(transportCost)}</td>
+                                </tr>
+                                ${otherCost > 0 ? `
+                                <tr>
+                                    <td>Other:</td>
+                                    <td style="text-align: right; font-weight: 700;">${formatCurrency(otherCost)}</td>
+                                </tr>
+                                ` : ''}
+                                <tr style="border-top: 2px solid #e2e8f0;">
+                                    <td class="grand-total" style="padding-top: 10px;">Grand Total:</td>
+                                    <td class="grand-total" style="text-align: right; padding-top: 10px;">${formatCurrency(grandTotal)}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="notes-box">
+                            <strong>Note:</strong> ${notes || 'Usually we refund immediately or by the end of the same day.'}
+                        </div>
+
+                        <div class="payment-box">
+                            <h3>Payment Details</h3>
+                            <div class="payment-details">
+                                <strong>Payment mode:</strong><br/>
+                                • GPay/Phone Pe: <strong>8971552453</strong><br/>
+                                • UPI ID: <strong>citycycling1@ybl</strong><br/>
+                                • Bank Account:<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;Name: <strong>Kanika Khandelwal</strong><br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;Account Number: <strong>50200007734914</strong><br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;IFSC Code: <strong>HDFC0001048</strong><br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;Bank: <strong>HDFC Bank</strong><br/>
+                                <br/>
+                                <em>Pls enter first 8 letters of your name in the remarks for the online transaction.</em><br/>
+                                <strong>*Please provide the screenshot of the payment once done*.</strong>
+                            </div>
+                        </div>
+
+                        <p style="font-size: 15px; margin-top: 30px;">Thanks & Regards,<br/><strong>City Cycling</strong></p>
+                    </div>
+                    <div class="footer">
+                        <p>© ${new Date().getFullYear()} CityCycling India. All rights reserved.</p>
+                        <p>Need support? Reply to this email or reach us on WhatsApp.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        const mailOptions = {
+            from: `"${emailConfig.from.name}" <${emailConfig.from.address}>`,
+            to: toEmail,
+            subject: subject,
+            html: html
+        };
+
+        console.log(`[QuotationService] Attempting to send quotation to: ${toEmail}`);
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`[QuotationService] ✅ Quotation email sent successfully: ${info.messageId}`);
+        
+        res.status(200).json({ success: true, message: `Quotation email successfully sent to ${toEmail}.`, messageId: info.messageId });
+    } catch (error) {
+        console.error(`[QuotationService] ❌ Failed to send quotation email:`, error);
+        res.status(500).json({ success: false, message: `Failed to send email: ${error.message}` });
+    }
+};
+
+
+

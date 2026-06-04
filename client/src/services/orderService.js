@@ -49,5 +49,11 @@ export const orderService = {
     getWhatsAppLink: async (id, template) => {
         const response = await API.post(`/api/orders/${id}/whatsapp`, { template });
         return response.data;
+    },
+
+    // Send Quotation Email
+    sendQuotationEmail: async (quotationData) => {
+        const response = await API.post('/api/orders/quotation/email', quotationData);
+        return response.data;
     }
 };

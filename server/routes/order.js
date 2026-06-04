@@ -12,6 +12,9 @@ router.post('/', orderController.createOrder);
 // 2. READ: Get all orders (with search/filter support)
 router.get('/', orderController.getOrders);
 
+// Route to send quotation emails
+router.post('/quotation/email', orderController.sendQuotationEmail);
+
 // 3. READ: Get a single order by its ID (e.g., CC-2026-1234)
 router.get('/:id', orderController.getOrderById);
 
