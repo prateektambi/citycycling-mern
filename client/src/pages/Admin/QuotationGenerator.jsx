@@ -117,7 +117,7 @@ const QuotationGenerator = () => {
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
                     body { background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                    .no-print, aside, header, footer { display: none !important; }
+                    .no-print, aside, header, footer, [class*="md:hidden"], .print\\:hidden { display: none !important; }
                     .print-full-width { width: 100% !important; max-width: 100% !important; border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
                     .min-h-screen { background: white !important; padding: 0 !important; min-height: auto !important; }
                     main { padding: 0 !important; margin: 0 !important; }

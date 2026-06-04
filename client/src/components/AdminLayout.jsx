@@ -25,7 +25,7 @@ const AdminLayout = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col md:flex-row">
       {/* Mobile Header */}
-      <div className="md:hidden bg-blue-600 text-white p-4 flex justify-between items-center shadow-md sticky top-0 z-50">
+      <div className="md:hidden print:hidden bg-blue-600 text-white p-4 flex justify-between items-center shadow-md sticky top-0 z-50">
         <h1 className="font-bold text-lg">CityCycling Admin</h1>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
