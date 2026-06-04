@@ -113,13 +113,14 @@ const QuotationGenerator = () => {
 
     return (
         <div className="min-h-screen bg-gray-100 p-4 md:p-8">
-            {/* Custom Print CSS */}
+            {/* Custom Print CSS to hide Sidebars / Footers / Admin Headers */}
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
                     body { background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                    .no-print { display: none !important; }
+                    .no-print, aside, header, footer { display: none !important; }
                     .print-full-width { width: 100% !important; max-width: 100% !important; border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
-                    .min-h-screen { background: white !important; padding: 0 !important; }
+                    .min-h-screen { background: white !important; padding: 0 !important; min-height: auto !important; }
+                    main { padding: 0 !important; margin: 0 !important; }
                 }
             `}} />
 
@@ -368,12 +369,6 @@ const QuotationGenerator = () => {
                                 )}
                             </div>
                         </div>
-
-                        {/* Salutation Intro */}
-                        <p className="text-sm text-gray-700 mb-6 italic">
-                            Hello Sir / Madam, <br/>
-                            As discussed, please find below cycles rental quotation for your reference.
-                        </p>
 
                         {/* Items Table */}
                         <div className="mb-6 border border-gray-200 rounded-xl overflow-hidden">
