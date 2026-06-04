@@ -647,7 +647,7 @@ exports.generateWhatsApp = async (req, res) => {
 // === SEND QUOTATION EMAIL ===
 exports.sendQuotationEmail = async (req, res) => {
     try {
-        const { toEmail, customerName, quoteNumber, quoteDate, items, transportation, other, notes } = req.body;
+        const { toEmail, customerName, quoteNumber, quoteDate, items, transportation, loadingUnloading, startDate, endDate, notes } = req.body;
         
         if (!toEmail) {
             return res.status(400).json({ success: false, message: 'Recipient email address (toEmail) is required.' });
@@ -686,8 +686,8 @@ exports.sendQuotationEmail = async (req, res) => {
         }).join('');
 
         const transportCost = Number(transportation) || 0;
-        const otherCost = Number(other) || 0;
-        const grandTotal = totalRental + totalDeposit + transportCost + otherCost;
+        const loadingCost = Number(loadingUnloading) || 0;
+        const grandTotal = totalRental + totalDeposit + transportCost + loadingCost;
 
         const subject = `Rental Quotation ${quoteNumber ? `#${quoteNumber}` : ''} - CityCycling`;
 
@@ -731,6 +731,7 @@ exports.sendQuotationEmail = async (req, res) => {
                         
                         <div style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
                             <strong>Quotation No:</strong> ${quoteNumber || 'N/A'} &nbsp;|&nbsp; <strong>Date:</strong> ${quoteDate || new Date().toLocaleDateString('en-IN')}
+                            ${startDate && endDate ? `<br/><strong>Event Period:</strong> ${startDate} to ${endDate}` : ''}
                         </div>
 
                         <div class="table-wrapper">
@@ -765,10 +766,10 @@ exports.sendQuotationEmail = async (req, res) => {
                                     <td>Transportation (Pick & Drop):</td>
                                     <td style="text-align: right; font-weight: 700;">${formatCurrency(transportCost)}</td>
                                 </tr>
-                                ${otherCost > 0 ? `
+                                ${loadingCost > 0 ? `
                                 <tr>
-                                    <td>Other:</td>
-                                    <td style="text-align: right; font-weight: 700;">${formatCurrency(otherCost)}</td>
+                                    <td>Loading/Unloading:</td>
+                                    <td style="text-align: right; font-weight: 700;">${formatCurrency(loadingCost)}</td>
                                 </tr>
                                 ` : ''}
                                 <tr style="border-top: 2px solid #e2e8f0;">

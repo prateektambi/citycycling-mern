@@ -9,6 +9,8 @@ const QuotationGenerator = () => {
     const [customerEmail, setCustomerEmail] = useState('');
     const [quoteNumber, setQuoteNumber] = useState('');
     const [quoteDate, setQuoteDate] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     
     // Items state: Defaults to Cycles and Helmets
     const [items, setItems] = useState([
@@ -17,7 +19,7 @@ const QuotationGenerator = () => {
     ]);
     
     const [transportation, setTransportation] = useState(2000);
-    const [other, setOther] = useState(0);
+    const [loadingUnloading, setLoadingUnloading] = useState(0);
     const [notes, setNotes] = useState('Usually we refund immediately or by the end of the same day.');
 
     // Status/Notification states
@@ -62,7 +64,7 @@ const QuotationGenerator = () => {
     // Calculations
     const rentalSubtotal = items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
     const depositSubtotal = items.reduce((sum, item) => sum + (item.quantity * item.deposit), 0);
-    const grandTotal = rentalSubtotal + depositSubtotal + Number(transportation) + Number(other);
+    const grandTotal = rentalSubtotal + depositSubtotal + Number(transportation) + Number(loadingUnloading);
 
     // Send Email Handler
     const handleSendEmail = async () => {
@@ -81,9 +83,11 @@ const QuotationGenerator = () => {
                 customerName: customerName || 'Sir / Madam',
                 quoteNumber,
                 quoteDate: quoteDate ? new Date(quoteDate).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN'),
+                startDate: startDate ? new Date(startDate).toLocaleDateString('en-IN') : '',
+                endDate: endDate ? new Date(endDate).toLocaleDateString('en-IN') : '',
                 items: items.filter(item => item.name && item.quantity > 0),
                 transportation: Number(transportation) || 0,
-                other: Number(other) || 0,
+                loadingUnloading: Number(loadingUnloading) || 0,
                 notes
             };
 
@@ -176,12 +180,33 @@ const QuotationGenerator = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Date</label>
+                                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Quote Date</label>
                                 <input 
                                     type="date" 
                                     className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:border-blue-500 focus:bg-white"
                                     value={quoteDate}
                                     onChange={(e) => setQuoteDate(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Event Start Date</label>
+                                <input 
+                                    type="date" 
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:border-blue-500 focus:bg-white"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Event End Date</label>
+                                <input 
+                                    type="date" 
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:border-blue-500 focus:bg-white"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
                                 />
                             </div>
                         </div>
@@ -264,12 +289,12 @@ const QuotationGenerator = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Other / Custom Cost</label>
+                                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Loading/Unloading Charges</label>
                                 <input 
                                     type="number" 
                                     className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-sm focus:outline-none focus:border-blue-500 focus:bg-white"
-                                    value={other}
-                                    onChange={(e) => setOther(Number(e.target.value) || 0)}
+                                    value={loadingUnloading}
+                                    onChange={(e) => setLoadingUnloading(Number(e.target.value) || 0)}
                                 />
                             </div>
                         </div>
@@ -335,9 +360,12 @@ const QuotationGenerator = () => {
                                 <p className="font-bold text-base text-gray-800">{customerName || 'Valued Customer'}</p>
                                 {customerEmail && <p className="text-gray-500 mt-1">{customerEmail}</p>}
                             </div>
-                            <div className="text-right">
+                            <div className="text-right text-xs">
                                 <h3 className="text-[10px] font-black tracking-widest text-gray-400 uppercase mb-2">Quotation Details</h3>
-                                <p className="text-gray-650">Date: <strong className="text-gray-900">{quoteDate ? new Date(quoteDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Today'}</strong></p>
+                                <p className="text-gray-600">Date: <strong className="text-gray-900">{quoteDate ? new Date(quoteDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Today'}</strong></p>
+                                {startDate && endDate && (
+                                    <p className="text-gray-600 mt-1">Event Period: <strong className="text-gray-900">{new Date(startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} → {new Date(endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</strong></p>
+                                )}
                             </div>
                         </div>
 
@@ -396,10 +424,10 @@ const QuotationGenerator = () => {
                                     <span className="text-gray-500">Transportation (Approx)</span>
                                     <span className="font-bold text-gray-900">{formatCurrency(transportation)}</span>
                                 </div>
-                                {other > 0 && (
+                                {loadingUnloading > 0 && (
                                     <div className="flex justify-between pb-1.5 border-b border-gray-100">
-                                        <span className="text-gray-500">Other Charges</span>
-                                        <span className="font-bold text-gray-900">{formatCurrency(other)}</span>
+                                        <span className="text-gray-500">Loading/Unloading</span>
+                                        <span className="font-bold text-gray-900">{formatCurrency(loadingUnloading)}</span>
                                     </div>
                                 )}
                                 <div className="flex justify-between items-center pt-2">
