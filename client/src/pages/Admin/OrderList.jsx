@@ -32,7 +32,11 @@ const OrderList = () => {
     const filteredOrders = (orders || []).filter(order => {
         const matchesSearch = order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                               order.customer.phone.includes(searchTerm) ||
-                              order.orderId.toLowerCase().includes(searchTerm.toLowerCase());
+                              order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              (order.bookings && order.bookings.some(b => 
+                                  (b.product && b.product.name && b.product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                                  (b.productCode && b.productCode.toLowerCase().includes(searchTerm.toLowerCase()))
+                              ));
         
         let matchesState = true;
         if (selectedStates.size > 0) {
@@ -148,7 +152,7 @@ const OrderList = () => {
                                 <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
                                 <input 
                                     type="text" 
-                                    placeholder="Search Name/Phone/ID..." 
+                                    placeholder="Search Name/Phone/ID/Product..." 
                                     className="w-full pl-10 pr-4 py-2 bg-gray-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}

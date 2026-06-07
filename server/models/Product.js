@@ -62,17 +62,17 @@ const ProductSchema = new mongoose.Schema({
     dailyRate: {
         type: Number,
         required: [true, 'Daily rental price is required'],
-        min: [0.01, 'Rate must be positive']
+        min: [0, 'Rate cannot be negative']
     },
     weeklyRate: {
         type: Number,
         required: [true, 'Weekly rental price is required'],
-        min: [0.01, 'Rate must be positive']
+        min: [0, 'Rate cannot be negative']
     },
     monthlyRate: {
         type: Number,
         required: [true, 'Monthly rental price is required'],
-        min: [0.01, 'Rate must be positive']
+        min: [0, 'Rate cannot be negative']
     },
     weeklyExtraRates: {
         day1: { type: Number, default: 0 },
