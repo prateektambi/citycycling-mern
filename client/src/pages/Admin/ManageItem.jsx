@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Wrench, Trash2, Plus, Calendar, DollarSign, FileText, CheckCircle, AlertCircle, Archive, Package } from 'lucide-react';
-import axios from 'axios';
+import axios from '../../api/axiosConfig';
 
 const ManageItem = () => {
     const { id } = useParams();

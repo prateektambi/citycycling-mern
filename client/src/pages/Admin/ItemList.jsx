@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ChevronRight, Filter, X, Bike, Wrench, Archive, CheckCircle, Plus } from 'lucide-react';
-import axios from 'axios';
+import axios from '../../api/axiosConfig';
 
 const ItemList = () => {
     const navigate = useNavigate();
