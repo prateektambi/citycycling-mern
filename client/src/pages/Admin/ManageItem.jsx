@@ -69,7 +69,7 @@ const ManageItem = () => {
 
     const fetchProducts = async () => {
         try {
-            const res = await axios.get('/api/products');
+            const res = await axios.get('/api/products?admin=true');
             setProducts(res.data || []);
         } catch (err) {
             console.error("Error fetching products:", err);
