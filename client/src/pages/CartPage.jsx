@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
 import { orderService } from '../services/orderService';
 import authService from '../services/authService';
+import { productService } from '../services/productService';
 import API from '../api/axiosConfig';
 import {
     Trash2,
@@ -24,8 +25,14 @@ import {
 
 const CartPage = () => {
     const { user } = useContext(AuthContext);
-    const { cart, cartCount, loading: cartLoading, removeFromCart, clearCart, refreshCart, updateQuantity } = useContext(CartContext);
+    const { cart, cartCount, loading: cartLoading, removeFromCart, clearCart, refreshCart, updateQuantity, addToCart } = useContext(CartContext);
     const navigate = useNavigate();
+
+    // ── Cross-sell accessories ──
+    const [accessories, setAccessories] = useState([]);
+    const [addingAccessoryId, setAddingAccessoryId] = useState(null);
+    const [accessorySuccessId, setAccessorySuccessId] = useState(null);
+    const [accessoryError, setAccessoryError] = useState('');
 
     // ── Form State ──
     const [deliveryType, setDeliveryType] = useState('Self-Pickup');
@@ -73,6 +80,54 @@ const CartPage = () => {
         refreshCart();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
+
+    // Fetch accessories if a cycle is in the cart
+    useEffect(() => {
+        const hasCycle = cart.items?.some(item => item.product?.category?.toLowerCase() === 'cycle');
+        if (hasCycle) {
+            const fetchAccessories = async () => {
+                try {
+                    const allProducts = await productService.getAll();
+                    // Filter out accessories that are already in the cart
+                    const inCartIds = new Set(cart.items.map(item => item.product?._id));
+                    const filtered = allProducts.filter(
+                        p => p.category?.toLowerCase() === 'accessory' && !inCartIds.has(p._id)
+                    );
+                    setAccessories(filtered);
+                } catch (err) {
+                    console.error("Failed to fetch accessories:", err);
+                }
+            };
+            fetchAccessories();
+        } else {
+            setAccessories([]);
+        }
+    }, [cart.items]);
+
+    const handleAddAccessory = async (accessory) => {
+        const firstCycle = cart.items?.find(item => item.product?.category?.toLowerCase() === 'cycle');
+        if (!firstCycle) {
+            setAccessoryError('Renting an accessory requires a cycle in the cart first.');
+            return;
+        }
+
+        setAddingAccessoryId(accessory._id);
+        setAccessoryError('');
+        setAccessorySuccessId(null);
+
+        const result = await addToCart(accessory._id, 1, firstCycle.startDate, firstCycle.endDate);
+        if (result.success) {
+            setAccessorySuccessId(accessory._id);
+            setTimeout(() => setAccessorySuccessId(null), 3000);
+        } else {
+            setAccessoryError(result.message || 'Failed to add accessory.');
+        }
+        setAddingAccessoryId(null);
+    };
+
+    const getImageUrl = (imageName) => {
+        return new URL(`/src/assets/${imageName}`, import.meta.url).href;
+    };
 
     // ── Shipping lookup when pincode changes & delivery type is Home-Delivery ──
     useEffect(() => {
@@ -405,6 +460,65 @@ const CartPage = () => {
                             ))}
                         </div>
                     </div>
+
+                    {/* Cross-Sell Accessories */}
+                    {accessories.length > 0 && (
+                        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-[0_30px_80px_rgba(0,0,0,0.06)] p-8">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-100 pb-4">
+                                <div>
+                                    <h2 className="text-xl font-black text-gray-900 uppercase">Enhance Your Booking</h2>
+                                    <p className="text-gray-400 text-xs font-bold mt-1">Recommended accessories for your rented cycles (auto-matched rental dates)</p>
+                                </div>
+                                {accessoryError && (
+                                    <div className="bg-red-50 border border-red-100 text-red-600 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1">
+                                        <AlertCircle size={14} /> {accessoryError}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {accessories.map(accessory => {
+                                    const hasSuccess = accessorySuccessId === accessory._id;
+                                    const isAdding = addingAccessoryId === accessory._id;
+
+                                    return (
+                                        <div key={accessory._id} className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 items-center">
+                                            <div className="w-20 h-20 bg-white rounded-xl border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
+                                                {accessory.imageUrls?.[0] ? (
+                                                    <img src={getImageUrl(accessory.imageUrls[0])} alt={accessory.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <Bike className="text-gray-300" size={24} />
+                                                )}
+                                            </div>
+
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="font-black text-gray-900 text-sm truncate uppercase tracking-tight">{accessory.name}</h3>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">₹{accessory.dailyRate}/day</p>
+                                                
+                                                <button
+                                                    onClick={() => handleAddAccessory(accessory)}
+                                                    disabled={isAdding}
+                                                    className={`mt-2 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                                                        hasSuccess
+                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:-translate-y-0.5'
+                                                    }`}
+                                                >
+                                                    {isAdding ? (
+                                                        <>Adding...</>
+                                                    ) : hasSuccess ? (
+                                                        <><CheckCircle2 size={12} /> Added</>
+                                                    ) : (
+                                                        <>Add to Cart</>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Customer Details Form */}
                     <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-[0_30px_80px_rgba(0,0,0,0.06)] p-8">

@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, NavLink } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useParams, NavLink, useNavigate } from 'react-router-dom';
 import { productService } from '../services/productService';
 import Rating from '../components/Rating';
 import BookingForm from '../components/BookingForm';
+import { AuthContext } from '../context/AuthContext';
+import { CartContext } from '../context/CartContext';
 import { 
     ChevronLeft, 
     ChevronRight, 
@@ -14,7 +16,9 @@ import {
     ShoppingCart, 
     Clock, 
     ArrowLeft,
-    Users
+    Users,
+    CheckCircle2,
+    AlertCircle
 } from 'lucide-react';
 
 const ProductPage = () => {
@@ -23,6 +27,19 @@ const ProductPage = () => {
     const [error, setError] = useState(null);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    // Context and navigation hooks
+    const { user } = useContext(AuthContext);
+    const { addToCart } = useContext(CartContext);
+    const navigate = useNavigate();
+
+    // Cross-sell states
+    const [accessories, setAccessories] = useState([]);
+    const [selectedStartDate, setSelectedStartDate] = useState('');
+    const [selectedEndDate, setSelectedEndDate] = useState('');
+    const [addingAccessoryId, setAddingAccessoryId] = useState(null);
+    const [accessorySuccessId, setAccessorySuccessId] = useState(null);
+    const [accessoryError, setAccessoryError] = useState('');
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -46,6 +63,52 @@ const ProductPage = () => {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    useEffect(() => {
+        if (product && product.category?.toLowerCase() === 'cycle') {
+            const fetchAccessories = async () => {
+                try {
+                    const allProducts = await productService.getAll();
+                    const filtered = allProducts.filter(p => p.category?.toLowerCase() === 'accessory');
+                    setAccessories(filtered);
+                } catch (err) {
+                    console.error("Failed to fetch accessories:", err);
+                }
+            };
+            fetchAccessories();
+        } else {
+            setAccessories([]);
+        }
+    }, [product]);
+
+    const handleAddAccessory = async (accessory) => {
+        if (!user) {
+            navigate(`/login?redirect=/product/${product.slug}`);
+            return;
+        }
+        if (!selectedStartDate || !selectedEndDate) {
+            setAccessoryError('Please select rental dates for the cycle first.');
+            const dateInput = document.querySelector('input[type="date"]');
+            if (dateInput) {
+                dateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                dateInput.focus();
+            }
+            return;
+        }
+
+        setAddingAccessoryId(accessory._id);
+        setAccessoryError('');
+        setAccessorySuccessId(null);
+
+        const result = await addToCart(accessory._id, 1, selectedStartDate, selectedEndDate);
+        if (result.success) {
+            setAccessorySuccessId(accessory._id);
+            setTimeout(() => setAccessorySuccessId(null), 3000);
+        } else {
+            setAccessoryError(result.message || 'Failed to add accessory to cart.');
+        }
+        setAddingAccessoryId(null);
+    };
 
     const getImageUrl = (imageName) => {
         return new URL(`/src/assets/${imageName}`, import.meta.url).href;
@@ -304,10 +367,100 @@ const ProductPage = () => {
                         {/* Booking Form with Calendar */}
                         <div className="pt-6 space-y-8">
                             {renderAvailabilityCalendar()}
-                            <BookingForm product={product} />
+                            <BookingForm 
+                                product={product} 
+                                onDateSelect={(start, end) => {
+                                    setSelectedStartDate(start);
+                                    setSelectedEndDate(end);
+                                }}
+                            />
                         </div>
                     </div>
                 </div>
+
+                {/* Recommended Accessories Section */}
+                {product.category?.toLowerCase() === 'cycle' && accessories.length > 0 && (
+                    <div className="mt-20 pt-16 border-t border-gray-100">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+                            <div>
+                                <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tight">
+                                    Enhance Your Ride
+                                </h2>
+                                <p className="text-gray-500 font-medium mt-1">
+                                    Add premium accessories matching your rental duration.
+                                </p>
+                            </div>
+                            {accessoryError && (
+                                <div className="bg-red-50 border border-red-100 text-red-700 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 animate-bounce">
+                                    <AlertCircle size={14} /> {accessoryError}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {accessories.map((accessory) => {
+                                const hasSuccess = accessorySuccessId === accessory._id;
+                                const isAdding = addingAccessoryId === accessory._id;
+
+                                return (
+                                    <div key={accessory._id} className="bg-white border-2 border-gray-50 rounded-[2.5rem] p-6 shadow-sm hover:border-blue-100 hover:shadow-md transition-all group flex flex-col justify-between">
+                                        <div>
+                                            {/* Accessory Image */}
+                                            <div className="aspect-square bg-gray-50 rounded-3xl overflow-hidden border border-gray-100 mb-6 relative">
+                                                {accessory.imageUrls && accessory.imageUrls.length > 0 ? (
+                                                    <img 
+                                                        src={getImageUrl(accessory.imageUrls[0])} 
+                                                        alt={accessory.name} 
+                                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                        <Bike size={48} />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Accessory Info */}
+                                            <h3 className="font-black text-gray-900 text-lg uppercase tracking-tight mb-2">
+                                                {accessory.name}
+                                            </h3>
+                                            <p className="text-gray-500 text-sm font-medium line-clamp-2 mb-4">
+                                                {accessory.description}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            {/* Rates & CTA */}
+                                            <div className="flex items-center justify-between border-t border-gray-50 pt-4 mt-2">
+                                                <div>
+                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Daily Rate</p>
+                                                    <p className="text-lg font-black text-gray-900">₹{accessory.dailyRate}<span className="text-xs text-gray-400 font-bold">/day</span></p>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleAddAccessory(accessory)}
+                                                    disabled={isAdding}
+                                                    className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${
+                                                        hasSuccess
+                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/10 hover:-translate-y-0.5'
+                                                    }`}
+                                                >
+                                                    {isAdding ? (
+                                                        <>Adding...</>
+                                                    ) : hasSuccess ? (
+                                                        <><CheckCircle2 size={14} /> Added</>
+                                                    ) : (
+                                                        <>Add to Cart</>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
