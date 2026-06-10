@@ -126,6 +126,10 @@ const CartPage = () => {
     };
 
     const getImageUrl = (imageName) => {
+        if (!imageName) return '';
+        if (imageName.startsWith('http://') || imageName.startsWith('https://')) {
+            return imageName;
+        }
         return new URL(`/src/assets/${imageName}`, import.meta.url).href;
     };
 
@@ -401,7 +405,7 @@ const CartPage = () => {
 
                                     <div className="w-full sm:w-32 h-24 bg-white rounded-xl border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
                                         {item.product.imageUrl ? (
-                                            <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+                                            <img src={getImageUrl(item.product.imageUrl)} alt={item.product.name} className="w-full h-full object-cover" />
                                         ) : (
                                             <Bike className="text-gray-300" size={32} />
                                         )}
