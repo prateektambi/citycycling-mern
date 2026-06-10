@@ -432,9 +432,17 @@ const ProductPage = () => {
                                         <div>
                                             {/* Rates & CTA */}
                                             <div className="flex items-center justify-between border-t border-gray-50 pt-4 mt-2">
-                                                <div>
-                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Daily Rate</p>
-                                                    <p className="text-lg font-black text-gray-900">₹{accessory.dailyRate}<span className="text-xs text-gray-400 font-bold">/day</span></p>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Daily Rate</p>
+                                                        <p className="text-sm font-black text-gray-900">₹{accessory.dailyRate}<span className="text-xs text-gray-400 font-bold">/day</span></p>
+                                                    </div>
+                                                    {accessory.weeklyRate && (
+                                                        <div>
+                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Weekly Advantage</p>
+                                                            <p className="text-xs font-black text-emerald-600">₹{accessory.weeklyRate}<span className="text-[10px] text-gray-400 font-bold">/week</span></p>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <button
                                                     onClick={() => handleAddAccessory(accessory)}

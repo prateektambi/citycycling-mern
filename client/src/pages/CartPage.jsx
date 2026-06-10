@@ -497,7 +497,12 @@ const CartPage = () => {
 
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="font-black text-gray-900 text-sm truncate uppercase tracking-tight">{accessory.name}</h3>
-                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">₹{accessory.dailyRate}/day</p>
+                                                <div className="flex flex-col gap-0.5 mt-1">
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">₹{accessory.dailyRate}/day</p>
+                                                    {accessory.weeklyRate && (
+                                                        <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">₹{accessory.weeklyRate}/week</p>
+                                                    )}
+                                                </div>
                                                 
                                                 <button
                                                     onClick={() => handleAddAccessory(accessory)}
