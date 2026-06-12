@@ -37,6 +37,7 @@ import ScrollToTop from './components/ScrollToTop';
 import Footer from './components/Footer';
 import GoogleOneTap from './components/GoogleOneTap';
 import { LinkedInCallback } from './components/LinkedInAuth';
+import ChatbotBubble from './components/ChatbotBubble';
 import './styles/App.css';
 
 function App() {
@@ -141,6 +142,7 @@ function App() {
         </Route>
       </Routes>
       {showHeaderFooter && <Footer />}
+      {showHeaderFooter && <ChatbotBubble />}
     </div>
   );
 }
