@@ -6,7 +6,7 @@ export default function ChatbotBubble() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: 'Hello! 🚴 I am your CityCycling Concierge. How can I help you ride today? Ask me about bike types, rates, cancellation policies, or local routes!'
+      content: 'Hello! 🚴 How can I help you ride today? Ask me about bike types, rates, cancellation policies, or local routes!'
     }
   ]);
   const [input, setInput] = useState('');
@@ -82,7 +82,7 @@ export default function ChatbotBubble() {
         <button
           onClick={() => setIsOpen(true)}
           className="flex items-center justify-center w-14 h-14 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-full shadow-lg hover:shadow-indigo-500/50 transition-all duration-300 transform hover:scale-105 active:scale-95 group"
-          aria-label="Open AI Concierge Chat"
+          aria-label="Open Chat with Us"
         >
           <MessageSquare className="w-6 h-6 transition-transform group-hover:rotate-6" />
           <span className="absolute -top-1 -right-1 flex h-3 w-3">
@@ -103,7 +103,7 @@ export default function ChatbotBubble() {
                 <span className="text-xl">🚴</span>
               </div>
               <div>
-                <h3 className="font-bold text-sm leading-tight">AI Concierge</h3>
+                <h3 className="font-bold text-sm leading-tight">Chat with Us</h3>
                 <span className="text-[10px] text-emerald-300 font-medium flex items-center">
                   <span className="h-1.5 w-1.5 bg-emerald-400 rounded-full mr-1 animate-pulse"></span>
                   Online & Active
@@ -141,7 +141,7 @@ export default function ChatbotBubble() {
               <div className="flex justify-start">
                 <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex items-center space-x-2">
                   <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                  <span className="text-xs text-gray-500 font-medium">Concierge is thinking...</span>
+                  <span className="text-xs text-gray-500 font-medium">Thinking...</span>
                 </div>
               </div>
             )}
