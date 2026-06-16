@@ -6,6 +6,7 @@ import {
     Wallet, CheckCircle, RotateCcw
 } from 'lucide-react';
 import { orderService } from '../../services/orderService';
+import { getWhatsAppLink } from '../../constants';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -122,9 +123,10 @@ const AdminDashboard = () => {
 
     // ========== ACTIONS ==========
     const handleWhatsApp = (order) => {
-        const phone = order.customer?.phone?.replace(/\D/g, '');
+        const phone = order.customer?.phone;
         const msg = `Hello ${order.customer?.name}, regarding your order #${order.orderId}`;
-        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        const url = getWhatsAppLink(phone, msg, true);
+        window.open(url, '_blank');
     };
 
     const handleStatusChange = async (orderId, newStatus) => {

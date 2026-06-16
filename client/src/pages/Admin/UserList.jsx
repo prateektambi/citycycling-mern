@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Phone, MessageCircle, ChevronRight, User, ShoppingCart } from 'lucide-react';
 import { userService } from '../../services/userService';
+import { getWhatsAppLink } from '../../constants';
 
 const UserList = () => {
     const navigate = useNavigate();
@@ -33,7 +34,7 @@ const UserList = () => {
 
     const handleWhatsAppCredentials = (user) => {
         const name = user.profile?.name || 'Customer';
-        const phone = user.profile?.phone?.replace(/\D/g, '') || '';
+        const phone = user.profile?.phone || '';
         const email = user.email;
         const siteUrl = window.location.origin;
         
@@ -48,7 +49,8 @@ You can view your orders and payment history in your profile.
 Thank you!
 Team CityCycling`;
 
-        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+        const url = getWhatsAppLink(phone, message, true);
+        window.open(url, '_blank');
     };
 
     const handleViewOrders = (userId) => {

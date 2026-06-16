@@ -1,4 +1,5 @@
 // server/utils/whatsappHelper.js
+const config = require('../config');
 
 /**
  * WhatsApp Message Templates
@@ -20,7 +21,7 @@ Thank you for your rental inquiry with CityCycling!
 
 Your booking is currently *On-Hold*. We'll confirm availability and get back to you shortly!
 
-Questions? Call us at +91-8971552453`;
+Questions? Call us at ${config.STORE_PHONE_NUMBER_FORMATTED}`;
     },
 
     booking_confirmed: (order) => {
@@ -105,7 +106,7 @@ ${totalPaid > 0
 
 We hope to serve you again soon! 🚴
 
-Have questions? Call us at +91-8971552453`;
+Have questions? Call us at ${config.STORE_PHONE_NUMBER_FORMATTED}`;
     },
 
     order_completed: (order) => {
@@ -136,7 +137,7 @@ Our team is evaluating the damage. We'll share:
 
 We'll contact you within 24 hours.
 
-Questions? Call us at +91-8971552453`;
+Questions? Call us at ${config.STORE_PHONE_NUMBER_FORMATTED}`;
     },
 
     overdue_reminder: (order) => {
@@ -154,7 +155,7 @@ ${order.logistics.return.type === 'Home-Collection'
     ? `Need collection? Let us know!` 
     : `Return to: Mayfair Anthem, Marathahalli`}
 
-Contact: +91-8971552453`;
+Contact: ${config.STORE_PHONE_NUMBER_FORMATTED}`;
     },
 
     // --- NEW DASHBOARD TEMPLATES ---

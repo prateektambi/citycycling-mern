@@ -6,6 +6,8 @@ import logo from '../assets/logo.png';
 import { Phone, MessageCircle, User, LogOut, LayoutDashboard, Package, ShoppingCart } from 'lucide-react';
 import '../styles/Header.css';
 
+import { STORE_PHONE_NUMBER, STORE_PHONE_NUMBER_FORMATTED, getWhatsAppLink } from '../constants';
+
 const Header = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const { user, logout } = useContext(AuthContext);
@@ -29,10 +31,10 @@ const Header = () => {
 
   const renderContactLinks = (mobile) => (
     <div style={mobile ? { backgroundColor: '#f3f4f6', padding: '8px', textAlign: 'center', fontSize: '0.875rem', display: 'flex', justifyContent: 'center', gap: '24px', alignItems: 'center', borderBottom: '1px solid #e5e7eb' } : { display: 'flex', gap: '24px', alignItems: 'center' }}>
-      <a href="tel:+918971552453" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: mobile ? '#374151' : '#ffffff', fontWeight: '500' }}>
-        <Phone size={14} /> <span>+91 897155 2453</span>
+      <a href={`tel:+91${STORE_PHONE_NUMBER}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: mobile ? '#374151' : '#ffffff', fontWeight: '500' }}>
+        <Phone size={14} /> <span>{STORE_PHONE_NUMBER_FORMATTED}</span>
       </a>
-      <a href="https://wa.me/918971552453" target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: mobile ? '#374151' : '#ffffff', fontWeight: '500' }}>
+      <a href={getWhatsAppLink(STORE_PHONE_NUMBER)} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none', color: mobile ? '#374151' : '#ffffff', fontWeight: '500' }}>
         <MessageCircle size={14} /> <span>WhatsApp Us</span>
       </a>
     </div>

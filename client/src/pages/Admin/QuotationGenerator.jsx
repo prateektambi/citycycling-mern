@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import logo from '../../assets/logo.png';
 import { orderService } from '../../services/orderService';
 import { Printer, Mail, Plus, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { STORE_GPAY_NUMBER, STORE_UPI_ID, STORE_ACCOUNT_NAME, STORE_ACCOUNT_NUMBER, STORE_IFSC } from '../../constants';
 
 const QuotationGenerator = () => {
     // State for Quotation Info
@@ -437,13 +438,13 @@ const QuotationGenerator = () => {
                             <h4 className="font-bold text-gray-900 uppercase tracking-widest text-[10px] mb-2 border-b pb-1">Payment Details</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 leading-relaxed text-gray-700">
                                 <div>
-                                    <p>• GPay/Phone Pe: <strong className="text-gray-900">8971552453</strong></p>
-                                    <p>• UPI ID: <strong className="text-gray-900">citycycling1@ybl</strong></p>
+                                    <p>• GPay/Phone Pe: <strong className="text-gray-900">{STORE_GPAY_NUMBER}</strong></p>
+                                    <p>• UPI ID: <strong className="text-gray-900">{STORE_UPI_ID}</strong></p>
                                 </div>
                                 <div>
-                                    <p>• Name: <strong className="text-gray-900">Kanika Khandelwal</strong></p>
-                                    <p>• Account Number: <strong className="text-gray-900">50200007734914</strong></p>
-                                    <p>• IFSC: <strong className="text-gray-900">HDFC0001048</strong> (HDFC Bank)</p>
+                                    <p>• Name: <strong className="text-gray-900">{STORE_ACCOUNT_NAME}</strong></p>
+                                    <p>• Account Number: <strong className="text-gray-900">{STORE_ACCOUNT_NUMBER}</strong></p>
+                                    <p>• IFSC: <strong className="text-gray-900">{STORE_IFSC}</strong> (HDFC Bank)</p>
                                 </div>
                             </div>
                             <div className="mt-3 pt-2 border-t border-gray-150 text-[10px] text-gray-500 italic">

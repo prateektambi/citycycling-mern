@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Phone, ChevronRight, Plus, Calendar, Truck, Bike, MessageCircle, Filter, X, User } from 'lucide-react';
 import { orderService } from '../../services/orderService';
+import { getWhatsAppLink } from '../../constants';
 
 const OrderList = () => {
     const navigate = useNavigate();
@@ -60,9 +61,8 @@ const OrderList = () => {
     };
 
     const handleWhatsAppClick = (phone, name, orderId) => {
-        const cleanPhone = phone?.replace(/\D/g, '');
         const message = `Hello ${name}, regarding your order #${orderId}`;
-        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+        const url = getWhatsAppLink(phone, message, true);
         window.open(url, '_blank');
     };
 

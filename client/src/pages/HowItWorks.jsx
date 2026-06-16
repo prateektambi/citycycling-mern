@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Calendar, ShoppingBag, ShieldCheck, Truck, ArrowRight, Phone, MessageCircle, FileText, CreditCard, Store, Clock, MapPin, Package, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import API from '../api/axiosConfig';
+import { STORE_PHONE_NUMBER, getWhatsAppLink } from '../constants';
 
 const HowItWorks = () => {
     useEffect(() => {
@@ -106,7 +107,7 @@ const HowItWorks = () => {
                         <a href="/catalogue" className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-5 rounded-3xl font-bold transition-all shadow-xl hover:scale-105 flex items-center gap-2 group">
                             Explore Catalogue <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                         </a>
-                        <a href="https://wa.me/918971552453" target="_blank" rel="noreferrer" className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border border-white/30 px-10 py-5 rounded-3xl font-bold transition-all">
+                        <a href={getWhatsAppLink(STORE_PHONE_NUMBER)} target="_blank" rel="noreferrer" className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border border-white/30 px-10 py-5 rounded-3xl font-bold transition-all">
                             Chat with us
                         </a>
                     </div>
@@ -295,7 +296,7 @@ const HowItWorks = () => {
                                     <XCircle size={32} className="text-gray-300 mx-auto mb-3" />
                                     <p className="text-gray-600 font-medium text-sm mb-4">{lookupError}</p>
                                     <a
-                                        href="https://wa.me/918971552453"
+                                        href={getWhatsAppLink(STORE_PHONE_NUMBER)}
                                         target="_blank"
                                         rel="noreferrer"
                                         className="inline-flex items-center gap-2 bg-[#25D366] text-white px-6 py-3 rounded-xl font-bold text-sm hover:scale-105 transition-all"
@@ -392,10 +393,10 @@ const HowItWorks = () => {
                             Our team is standing by to help you choose the right bike or custom plan.
                         </p>
                         <div className="flex flex-wrap justify-center gap-6">
-                            <a href="tel:+918971552453" className="bg-white text-gray-900 px-12 py-6 rounded-[2rem] font-black flex items-center gap-3 transition-all hover:scale-105 shadow-[0_20px_50px_rgba(255,255,255,0.1)]">
+                            <a href={`tel:+91${STORE_PHONE_NUMBER}`} className="bg-white text-gray-900 px-12 py-6 rounded-[2rem] font-black flex items-center gap-3 transition-all hover:scale-105 shadow-[0_20px_50px_rgba(255,255,255,0.1)]">
                                 <Phone size={24} /> CALL SUPPORT
                             </a>
-                            <a href="https://wa.me/918971552453" target="_blank" rel="noreferrer" className="bg-[#25D366] text-white px-12 py-6 rounded-[2rem] font-black flex items-center gap-3 transition-all hover:scale-105 shadow-[0_20px_50px_rgba(37,211,102,0.2)]">
+                            <a href={getWhatsAppLink(STORE_PHONE_NUMBER)} target="_blank" rel="noreferrer" className="bg-[#25D366] text-white px-12 py-6 rounded-[2rem] font-black flex items-center gap-3 transition-all hover:scale-105 shadow-[0_20px_50px_rgba(37,211,102,0.2)]">
                                 <MessageCircle size={24} /> WHATSAPP US
                             </a>
                         </div>

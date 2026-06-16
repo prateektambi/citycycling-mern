@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { STORE_GPAY_NUMBER } from '../constants';
 import { CartContext } from '../context/CartContext';
 import { orderService } from '../services/orderService';
 import authService from '../services/authService';
@@ -335,7 +336,7 @@ const CartPage = () => {
                         <div className="bg-white rounded-xl p-4 border border-orange-100 space-y-2">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Gpay/PhonePe</p>
                             <div className="text-sm text-gray-700 font-medium space-y-1">
-                                <p><span className="text-gray-400">A/C:</span> <span className="font-bold text-gray-900">8971552453</span></p>
+                                <p><span className="text-gray-400">A/C:</span> <span className="font-bold text-gray-900">{STORE_GPAY_NUMBER}</span></p>
                             </div>
                         </div>
                     </div>

@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const User = require('../models/User');
 const Product = require('../models/Product');
+const config = require('../config');
 const mongoose = require('mongoose');
 const { isTotalStockAvailable } = require('../utils/availability');
 const { updateProductAvailability } = require('../utils/availabilityUpdater');
@@ -787,12 +788,12 @@ exports.sendQuotationEmail = async (req, res) => {
                             <h3>Payment Details</h3>
                             <div class="payment-details">
                                 <strong>Payment mode:</strong><br/>
-                                • GPay/Phone Pe: <strong>8971552453</strong><br/>
-                                • UPI ID: <strong>citycycling1@ybl</strong><br/>
+                                • GPay/Phone Pe: <strong>${config.STORE_GPAY_NUMBER}</strong><br/>
+                                • UPI ID: <strong>${config.STORE_UPI_ID}</strong><br/>
                                 • Bank Account:<br/>
-                                &nbsp;&nbsp;&nbsp;&nbsp;Name: <strong>Kanika Khandelwal</strong><br/>
-                                &nbsp;&nbsp;&nbsp;&nbsp;Account Number: <strong>50200007734914</strong><br/>
-                                &nbsp;&nbsp;&nbsp;&nbsp;IFSC Code: <strong>HDFC0001048</strong><br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;Name: <strong>${config.STORE_ACCOUNT_NAME}</strong><br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;Account Number: <strong>${config.STORE_ACCOUNT_NUMBER}</strong><br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;IFSC Code: <strong>${config.STORE_IFSC}</strong><br/>
                                 &nbsp;&nbsp;&nbsp;&nbsp;Bank: <strong>HDFC Bank</strong><br/>
                                 <br/>
                                 <em>Pls enter first 8 letters of your name in the remarks for the online transaction.</em><br/>

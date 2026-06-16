@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { Bike, Phone, MessageCircle, MapPin } from 'lucide-react';
+import { STORE_PHONE_NUMBER, STORE_PHONE_NUMBER_FORMATTED, getWhatsAppLink } from '../constants';
 
 const Footer = () => {
     return (
@@ -35,12 +36,12 @@ const Footer = () => {
                         <h4 className="text-white font-bold text-xs uppercase tracking-widest">Contact</h4>
                         <ul className="space-y-3">
                             <li>
-                                <a href="tel:+918971552453" className="flex items-center gap-2 text-sm hover:text-blue-400 transition-colors">
-                                    <Phone size={14} /> +91 897155 2453
+                                <a href={`tel:+91${STORE_PHONE_NUMBER}`} className="flex items-center gap-2 text-sm hover:text-blue-400 transition-colors">
+                                    <Phone size={14} /> {STORE_PHONE_NUMBER_FORMATTED}
                                 </a>
                             </li>
                             <li>
-                                <a href="https://wa.me/918971552453" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm hover:text-green-400 transition-colors">
+                                <a href={getWhatsAppLink(STORE_PHONE_NUMBER)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm hover:text-green-400 transition-colors">
                                     <MessageCircle size={14} /> WhatsApp Us
                                 </a>
                             </li>

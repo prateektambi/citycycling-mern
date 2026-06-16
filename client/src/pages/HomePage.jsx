@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Bike, Clock, MapPin, ArrowRight, Phone, MessageCircle, Star, CheckCircle2 } from 'lucide-react';
+import { STORE_PHONE_NUMBER, getWhatsAppLink } from '../constants';
 
 const HomePage = () => {
     useEffect(() => {
@@ -206,10 +207,10 @@ const HomePage = () => {
                         </p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-6">
-                        <a href="tel:+918971552453" className="bg-white text-blue-600 px-10 py-5 rounded-2xl font-black flex items-center gap-3 transition-all hover:scale-105 shadow-xl">
+                        <a href={`tel:+91${STORE_PHONE_NUMBER}`} className="bg-white text-blue-600 px-10 py-5 rounded-2xl font-black flex items-center gap-3 transition-all hover:scale-105 shadow-xl">
                             <Phone size={22} /> CALL US
                         </a>
-                        <a href="https://wa.me/918971552453" target="_blank" rel="noreferrer" className="bg-[#25D366] text-white px-10 py-5 rounded-2xl font-black flex items-center gap-3 transition-all hover:scale-105 shadow-xl">
+                        <a href={getWhatsAppLink(STORE_PHONE_NUMBER)} target="_blank" rel="noreferrer" className="bg-[#25D366] text-white px-10 py-5 rounded-2xl font-black flex items-center gap-3 transition-all hover:scale-105 shadow-xl">
                             <MessageCircle size={22} /> WHATSAPP
                         </a>
                     </div>
