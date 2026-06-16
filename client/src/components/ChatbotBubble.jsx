@@ -246,30 +246,33 @@ export default function ChatbotBubble() {
                     {hasDynamic ? "Select an Option" : "Navigation"}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
-                    {dynamicOptions.map((opt, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleQuickAction(opt.num)}
-                        className="flex items-center space-x-1 text-left text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 border border-blue-200/60 rounded-xl px-3 py-1.5 transition-all font-medium"
-                      >
-                        <span>{opt.label}</span>
-                      </button>
-                    ))}
-                    {isNotRoot && (
-                      <>
+                    {hasDynamic ? (
+                      dynamicOptions.map((opt, idx) => (
                         <button
-                          onClick={() => handleQuickAction('process')}
-                          className="flex items-center space-x-1 text-left text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-800 border border-gray-200 rounded-xl px-3 py-1.5 transition-all font-medium"
+                          key={idx}
+                          onClick={() => handleQuickAction(opt.num)}
+                          className="flex items-center space-x-1 text-left text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 border border-blue-200/60 rounded-xl px-3 py-1.5 transition-all font-medium"
                         >
-                          <span>↩️ Process Menu</span>
+                          <span>{opt.label}</span>
                         </button>
-                        <button
-                          onClick={() => handleQuickAction('back')}
-                          className="flex items-center space-x-1 text-left text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-800 border border-gray-200 rounded-xl px-3 py-1.5 transition-all font-medium"
-                        >
-                          <span>↩️ Main Menu</span>
-                        </button>
-                      </>
+                      ))
+                    ) : (
+                      isNotRoot && (
+                        <>
+                          <button
+                            onClick={() => handleQuickAction('process')}
+                            className="flex items-center space-x-1 text-left text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-800 border border-gray-200 rounded-xl px-3 py-1.5 transition-all font-medium"
+                          >
+                            <span>↩️ Back to other steps in process</span>
+                          </button>
+                          <button
+                            onClick={() => handleQuickAction('back')}
+                            className="flex items-center space-x-1 text-left text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-800 border border-gray-200 rounded-xl px-3 py-1.5 transition-all font-medium"
+                          >
+                            <span>↩️ Main Menu</span>
+                          </button>
+                        </>
+                      )
                     )}
                   </div>
                 </div>
