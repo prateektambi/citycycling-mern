@@ -230,10 +230,15 @@ export default function ChatbotBubble() {
             if (!lastMessage || lastMessage.role !== 'assistant') return null;
 
             const dynamicOptions = getMenuOptions(lastMessage.content);
-            if (dynamicOptions.length > 0) {
+            const isNotRoot = messages.length > 1;
+            const hasDynamic = dynamicOptions.length > 0;
+
+            if (hasDynamic || isNotRoot) {
               return (
                 <div className="px-4 py-2 border-t border-gray-100 bg-white flex flex-col space-y-1.5 max-h-[140px] overflow-y-auto">
-                  <p className="text-[10px] text-gray-400 font-black uppercase tracking-wider mb-0.5">Select an Option</p>
+                  <p className="text-[10px] text-gray-400 font-black uppercase tracking-wider mb-0.5">
+                    {hasDynamic ? "Select an Option" : "Navigation"}
+                  </p>
                   <div className="flex flex-wrap gap-1.5">
                     {dynamicOptions.map((opt, idx) => (
                       <button
@@ -244,6 +249,22 @@ export default function ChatbotBubble() {
                         <span>{opt.label}</span>
                       </button>
                     ))}
+                    {isNotRoot && (
+                      <>
+                        <button
+                          onClick={() => handleQuickAction('process')}
+                          className="flex items-center space-x-1 text-left text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-800 border border-gray-200 rounded-xl px-3 py-1.5 transition-all font-medium"
+                        >
+                          <span>↩️ Process Menu</span>
+                        </button>
+                        <button
+                          onClick={() => handleQuickAction('back')}
+                          className="flex items-center space-x-1 text-left text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-800 border border-gray-200 rounded-xl px-3 py-1.5 transition-all font-medium"
+                        >
+                          <span>↩️ Main Menu</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               );
