@@ -6,7 +6,7 @@ export default function ChatbotBubble() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: 'Hello! 🚴 How can I help you ride today? Ask me about bike types, rates, cancellation policies, or local routes!'
+      content: 'Hello! 🚴 Welcome to City Cycling! How can we help you get riding today?\n\nPlease choose from the options below:\n1️⃣ About the process (Location, Timings, Pricing, Deposit, Delivery)\n2️⃣ Other (Real-time availability, bookings, cancellation, rules, trails, maintenance help)'
     }
   ]);
   const [input, setInput] = useState('');
@@ -93,6 +93,64 @@ export default function ChatbotBubble() {
     return options;
   };
 
+  const renderMessageContent = (content) => {
+    if (!content) return null;
+    const lines = content.split('\n');
+    const mdRegex = /(\*\*.*?\*\*|\*.*?\*)/g;
+
+    const parseLineMarkup = (text) => {
+      const tokens = text.split(mdRegex);
+      return tokens.map((token, idx) => {
+        if (token.startsWith('**') && token.endsWith('**')) {
+          return <strong key={idx} className="font-semibold text-gray-900">{token.slice(2, -2)}</strong>;
+        } else if (token.startsWith('*') && token.endsWith('*')) {
+          return <em key={idx} className="italic text-gray-800">{token.slice(1, -1)}</em>;
+        }
+        return token;
+      });
+    };
+
+    return lines.map((line, lineIdx) => {
+      const trimmed = line.trim();
+
+      // Skip rendering empty lines
+      if (!trimmed) {
+        return <div key={lineIdx} className="h-2" />;
+      }
+
+      // Check for headers (e.g. "### Title" or "📋 **About the process**:")
+      if (trimmed.startsWith('###')) {
+        return (
+          <h4 key={lineIdx} className="text-sm font-bold text-gray-900 mt-3 mb-1">
+            {parseLineMarkup(trimmed.replace(/^###\s*/, ''))}
+          </h4>
+        );
+      }
+
+      // Check for bullet lists (e.g. "* Bullet text")
+      const bulletMatch = line.match(/^(\s*)([*+-])\s+(.+)$/);
+      if (bulletMatch) {
+        const indent = bulletMatch[1].length;
+        const textContent = bulletMatch[3];
+        const paddingLeft = indent > 0 ? `${indent * 6}px` : '2px';
+
+        return (
+          <div key={lineIdx} className="flex items-start my-0.5 text-xs leading-relaxed" style={{ paddingLeft }}>
+            <span className="text-blue-500 mr-2 select-none font-black">•</span>
+            <span className="flex-1 text-gray-700">{parseLineMarkup(textContent)}</span>
+          </div>
+        );
+      }
+
+      // Regular text line
+      return (
+        <div key={lineIdx} className="text-xs leading-relaxed text-gray-700 my-0.5">
+          {parseLineMarkup(line)}
+        </div>
+      );
+    });
+  };
+
   return (
     <div className="fixed bottom-6 right-6 z-50 font-sans">
       {/* Floating Action Button */}
@@ -149,9 +207,9 @@ export default function ChatbotBubble() {
                       ? 'bg-blue-600 text-white rounded-br-none'
                       : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'
                   }`}
-                  style={{ whiteSpace: 'pre-wrap' }}
+                  style={msg.role === 'user' ? { whiteSpace: 'pre-wrap' } : {}}
                 >
-                  {msg.content}
+                  {msg.role === 'user' ? msg.content : renderMessageContent(msg.content)}
                 </div>
               </div>
             ))}
