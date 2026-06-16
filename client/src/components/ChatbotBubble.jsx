@@ -75,6 +75,24 @@ export default function ChatbotBubble() {
     handleSend(text);
   };
 
+  const getMenuOptions = (content) => {
+    if (!content) return [];
+    const lines = content.split('\n');
+    const options = [];
+    const optionRegex = /^(\d+(?:\.\d+)?)(?:️⃣|\.|:)?\s+(.+)$/;
+    for (const line of lines) {
+      const match = line.trim().match(optionRegex);
+      if (match) {
+        const num = match[1];
+        const label = match[2].trim();
+        if (label.length < 100) {
+          options.push({ num, label });
+        }
+      }
+    }
+    return options;
+  };
+
   return (
     <div className="fixed bottom-6 right-6 z-50 font-sans">
       {/* Floating Action Button */}
@@ -148,33 +166,61 @@ export default function ChatbotBubble() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Action Suggestions */}
-          {messages.length === 1 && !loading && (
-            <div className="px-4 py-2 border-t border-gray-100 bg-white flex flex-col space-y-1.5">
-              <p className="text-[10px] text-gray-400 font-black uppercase tracking-wider mb-0.5">Quick Actions</p>
-              <button
-                onClick={() => handleQuickAction('Check cycle rates and availability')}
-                className="flex items-center space-x-2 text-left text-xs bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-700 border border-gray-100 rounded-xl px-3 py-2 transition-all"
-              >
-                <Compass className="w-3.5 h-3.5" />
-                <span>Check cycle rates and availability</span>
-              </button>
-              <button
-                onClick={() => handleQuickAction('What is the Hessarghatta loop distance?')}
-                className="flex items-center space-x-2 text-left text-xs bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-700 border border-gray-100 rounded-xl px-3 py-2 transition-all"
-              >
-                <HelpCircle className="w-3.5 h-3.5" />
-                <span>What is the Hessarghatta loop distance?</span>
-              </button>
-              <button
-                onClick={() => handleQuickAction('My tire punctured on the way to Nandi Hills!')}
-                className="flex items-center space-x-2 text-left text-xs bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 border border-gray-100 rounded-xl px-3 py-2 transition-all"
-              >
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                <span>Emergency: Tire punctured on Nandi Hills</span>
-              </button>
-            </div>
-          )}
+          {/* Dynamic / Fallback Quick Actions */}
+          {!loading && (() => {
+            const lastMessage = messages[messages.length - 1];
+            if (!lastMessage || lastMessage.role !== 'assistant') return null;
+
+            const dynamicOptions = getMenuOptions(lastMessage.content);
+            if (dynamicOptions.length > 0) {
+              return (
+                <div className="px-4 py-2 border-t border-gray-100 bg-white flex flex-col space-y-1.5 max-h-[140px] overflow-y-auto">
+                  <p className="text-[10px] text-gray-400 font-black uppercase tracking-wider mb-0.5">Select an Option</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {dynamicOptions.map((opt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleQuickAction(opt.num)}
+                        className="flex items-center space-x-1 text-left text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 border border-blue-200/60 rounded-xl px-3 py-1.5 transition-all font-medium"
+                      >
+                        <span>{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+
+            if (messages.length === 1) {
+              return (
+                <div className="px-4 py-2 border-t border-gray-100 bg-white flex flex-col space-y-1.5">
+                  <p className="text-[10px] text-gray-400 font-black uppercase tracking-wider mb-0.5">Quick Actions</p>
+                  <button
+                    onClick={() => handleQuickAction('Check cycle rates and availability')}
+                    className="flex items-center space-x-2 text-left text-xs bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-700 border border-gray-100 rounded-xl px-3 py-2 transition-all"
+                  >
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>Check cycle rates and availability</span>
+                  </button>
+                  <button
+                    onClick={() => handleQuickAction('What is the Hessarghatta loop distance?')}
+                    className="flex items-center space-x-2 text-left text-xs bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-700 border border-gray-100 rounded-xl px-3 py-2 transition-all"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    <span>What is the Hessarghatta loop distance?</span>
+                  </button>
+                  <button
+                    onClick={() => handleQuickAction('My tire punctured on the way to Nandi Hills!')}
+                    className="flex items-center space-x-2 text-left text-xs bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 border border-gray-100 rounded-xl px-3 py-2 transition-all"
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Emergency: Tire punctured on Nandi Hills</span>
+                  </button>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Input Footer */}
           <form
