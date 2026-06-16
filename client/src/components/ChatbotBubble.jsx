@@ -97,6 +97,7 @@ export default function ChatbotBubble() {
     if (!content) return null;
     const lines = content.split('\n');
     const mdRegex = /(\*\*.*?\*\*|\*.*?\*)/g;
+    const optionRegex = /^(\d+(?:\.\d+)?)(?:️⃣|\.|:)?\s+(.+)$/;
 
     const parseLineMarkup = (text) => {
       const tokens = text.split(mdRegex);
@@ -112,6 +113,11 @@ export default function ChatbotBubble() {
 
     return lines.map((line, lineIdx) => {
       const trimmed = line.trim();
+
+      // Skip rendering the numbered menu options inside the chat text
+      if (optionRegex.test(trimmed)) {
+        return null;
+      }
 
       // Skip rendering empty lines
       if (!trimmed) {
