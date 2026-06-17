@@ -16,8 +16,13 @@ export const STORE_IFSC = 'HDFC0001048';
  * @returns {string} The WhatsApp/Intent URI
  */
 export const getWhatsAppLink = (phone, message = '', forceBusiness = false) => {
-  const cleanPhone = phone?.replace(/\D/g, '');
+  let cleanPhone = phone?.replace(/\D/g, '');
   if (!cleanPhone) return '';
+
+  // If it's a 10-digit number, prepend India's country code '91'
+  if (cleanPhone.length === 10) {
+    cleanPhone = '91' + cleanPhone;
+  }
 
   if (forceBusiness) {
     const ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
