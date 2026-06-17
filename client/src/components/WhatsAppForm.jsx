@@ -120,7 +120,7 @@ const WhatsAppForm = ({ title, subtitle }) => {
                 name="height"
                 value={formData.height}
                 onChange={handleChange}
-                placeholder="e.g. 5'8\" or 175cm"
+                placeholder="e.g. 5ft 8in or 175cm"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-gray-50/50"
               />
             </div>
