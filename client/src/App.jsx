@@ -20,6 +20,7 @@ import OrderReceipt from './pages/Admin/OrderReceipt';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import UserList from './pages/Admin/UserList';
 import QuotationGenerator from './pages/Admin/QuotationGenerator';
+import WhatsAppDigest from './pages/Admin/WhatsAppDigest';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
@@ -127,6 +128,7 @@ function App() {
           <Route path="orders/:id" element={<ManageOrder />} />
           <Route path="users" element={<UserList />} />
           <Route path="quotations" element={<QuotationGenerator />} />
+          <Route path="whatsapp" element={<WhatsAppDigest />} />
           
           {/* Item Routes */}
           <Route path="items" element={<ItemList />} />

@@ -10,7 +10,7 @@ const port = config.PORT || 5000;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '15mb' })); // raised for WhatsApp .txt export uploads (JSON)
 
 
 // Fix for local DNS SRV resolution issues (ECONNREFUSED)
@@ -39,6 +39,7 @@ const userRoutes = require('./routes/userRoutes');
 const shippingRoutes = require('./routes/shippingRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const whatsappRoutes = require('./routes/whatsappRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/seed', seedRoutes);
@@ -49,6 +50,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/shipping', shippingRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/ai/whatsapp', whatsappRoutes);
 
 // Test routes (only in development)
 if (process.env.NODE_ENV !== 'production') {
