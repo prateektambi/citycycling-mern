@@ -169,7 +169,17 @@ const WhatsAppDigest = () => {
       });
       
       if (!response.ok) {
-        throw new Error('Could not fetch files. Check if Folder ID is correct and shared.');
+        if (response.status === 401 || response.status === 403) {
+          setGoogleAccessToken(null);
+        }
+        let errMsg = 'Could not fetch files. Check if Folder ID is correct and shared.';
+        try {
+          const errData = await response.json();
+          if (errData?.error?.message) {
+            errMsg = `${errMsg} (Drive API: ${errData.error.message})`;
+          }
+        } catch (_) {}
+        throw new Error(errMsg);
       }
       
       const data = await response.json();
@@ -194,7 +204,17 @@ const WhatsAppDigest = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to download file from Google Drive.`);
+        if (response.status === 401 || response.status === 403) {
+          setGoogleAccessToken(null);
+        }
+        let errMsg = `Failed to download file from Google Drive.`;
+        try {
+          const errData = await response.json();
+          if (errData?.error?.message) {
+            errMsg = `${errMsg} (Drive API: ${errData.error.message})`;
+          }
+        } catch (_) {}
+        throw new Error(errMsg);
       }
 
       let payloadFiles = [];
@@ -352,9 +372,21 @@ const WhatsAppDigest = () => {
               ) : (
                 <div className="border border-gray-100 rounded-xl p-3 bg-gray-50 max-h-[140px] overflow-y-auto space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-gray-400 flex items-center gap-1">
-                      <CheckCircle2 size={13} className="text-green-500" /> Connected
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-gray-400 flex items-center gap-1">
+                        <CheckCircle2 size={13} className="text-green-500" /> Connected
+                      </span>
+                      <button
+                        onClick={() => {
+                          setGoogleAccessToken(null);
+                          setDriveFiles([]);
+                          setError(null);
+                        }}
+                        className="text-[10px] font-bold text-red-500 hover:underline"
+                      >
+                        Disconnect
+                      </button>
+                    </div>
                     <button
                       onClick={() => fetchDriveFiles(googleAccessToken, driveFolderId)}
                       className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-0.5"
