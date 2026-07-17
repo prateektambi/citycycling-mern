@@ -14,10 +14,15 @@ export const whatsappService = {
   // Upload one or more WhatsApp .txt exports (read client-side, sent as JSON).
   uploadChats: async (fileList) => {
     const files = await Promise.all(
-      Array.from(fileList).map(async (f) => ({
-        filename: f.name,
-        content: await readFileAsText(f),
-      }))
+      Array.from(fileList).map(async (f) => {
+        if (f.content !== undefined) {
+          return { filename: f.filename || f.name, content: f.content };
+        }
+        return {
+          filename: f.name,
+          content: await readFileAsText(f),
+        };
+      })
     );
     const response = await API.post('/api/ai/whatsapp/upload', { files });
     return response.data;
