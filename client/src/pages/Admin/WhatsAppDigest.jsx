@@ -145,7 +145,7 @@ const WhatsAppDigest = () => {
         fetchDriveFiles(tokenResponse.access_token, driveFolderId);
       }
     },
-    scope: 'https://www.googleapis.com/auth/drive.readonly',
+    scope: 'https://www.googleapis.com/auth/drive',
     onError: () => setError('Google Drive authorization failed.'),
   });
 
@@ -234,10 +234,42 @@ const WhatsAppDigest = () => {
       const result = await whatsappService.uploadChats(payloadFiles);
       setUploadResult(result);
       pollForNewDigest(prevGeneratedAt);
+
+      // Automatically delete the file from Google Drive after successful import
+      try {
+        await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${googleAccessToken}` },
+        });
+        setDriveFiles((prev) => prev.filter((f) => f.id !== file.id));
+      } catch (deleteErr) {
+        console.error('Failed to auto-delete file from Google Drive:', deleteErr);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
       setSyncingFileId(null);
+    }
+  };
+
+  const cleanupDriveFolder = async () => {
+    if (!window.confirm("Are you sure you want to delete all zip and text files in this Google Drive folder?")) {
+      return;
+    }
+    setLoadingFiles(true);
+    setError(null);
+    try {
+      for (const file of driveFiles) {
+        await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${googleAccessToken}` },
+        });
+      }
+      setDriveFiles([]);
+    } catch (err) {
+      setError(`Failed to clean up some files: ${err.message}`);
+    } finally {
+      setLoadingFiles(false);
     }
   };
 
@@ -387,12 +419,23 @@ const WhatsAppDigest = () => {
                         Disconnect
                       </button>
                     </div>
-                    <button
-                      onClick={() => fetchDriveFiles(googleAccessToken, driveFolderId)}
-                      className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-0.5"
-                    >
-                      <RefreshCw size={11} className={loadingFiles ? 'animate-spin' : ''} /> reload files
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => fetchDriveFiles(googleAccessToken, driveFolderId)}
+                        className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-0.5"
+                      >
+                        <RefreshCw size={11} className={loadingFiles ? 'animate-spin' : ''} /> reload files
+                      </button>
+                      {driveFiles.length > 0 && (
+                        <button
+                          onClick={cleanupDriveFolder}
+                          disabled={loadingFiles}
+                          className="text-xs font-bold text-red-600 hover:underline"
+                        >
+                          Clean up Folder
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {loadingFiles ? (
                     <p className="text-xs text-gray-400 text-center py-4">Fetching file list...</p>
