@@ -262,4 +262,26 @@ router.post('/drive/sync-file', protect, async (req, res) => {
   }
 });
 
+// POST /api/ai/whatsapp/conversations/reanalyze
+router.post('/conversations/reanalyze', protect, async (req, res) => {
+  try {
+    const url = `${config.AI_SERVICE_URL}/api/whatsapp/conversations/reanalyze`;
+    const response = await aiClient.post(url, req.body, { headers: authHeaders() });
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/ai/whatsapp/conversations/stage
+router.post('/conversations/stage', protect, async (req, res) => {
+  try {
+    const url = `${config.AI_SERVICE_URL}/api/whatsapp/conversations/stage`;
+    const response = await aiClient.post(url, req.body, { headers: authHeaders() });
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

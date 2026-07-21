@@ -238,6 +238,26 @@ const WhatsAppDigest = () => {
   const drafts = digest?.whatsapp_drafts || [];
   const actionItems = digest?.action_items || [];
 
+  const handleStageChange = async (phone, newStage) => {
+    try {
+      await whatsappService.updateConversationStage(phone, newStage);
+      setConversations(prev => prev.map(c => c.phone === phone ? { ...c, current_stage: newStage } : c));
+      loadDigest();
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || 'Failed to update stage');
+    }
+  };
+
+  const handleReanalyzeChat = async (phone) => {
+    const prevGeneratedAt = digest?.generated_at || null;
+    try {
+      await whatsappService.reanalyzeConversation(phone);
+      pollForNewDigest(prevGeneratedAt);
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || 'Failed to re-analyze conversation');
+    }
+  };
+
   // Find the selected conversation details
   const activeConversation = conversations.find(c => c.phone === selectedPhone);
   const filteredMessages = activeConversation?.messages?.filter(m => {
@@ -539,52 +559,92 @@ const WhatsAppDigest = () => {
             </div>
           )}
 
-          {/* Conversation classifications (Interactive Viewer Trigger) */}
-          {classifications.length > 0 && (
+          {/* Customer Conversations & Order Lifecycle Table */}
+          {conversations.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <h2 className="font-black text-gray-800 text-base mb-4">Conversations History Logs</h2>
-              <div className="divide-y divide-gray-50 max-h-[450px] overflow-y-auto pr-2">
-                {classifications.map((c, i) => (
-                  <div
-                    key={i}
-                    onClick={() => setSelectedPhone(c.phone)}
-                    className="flex items-center justify-between gap-4 py-3.5 px-3 rounded-2xl cursor-pointer hover:bg-green-50/20 active:bg-green-50/40 transition-all duration-200 group"
-                  >
-                    <div className="min-w-0 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100 shrink-0 group-hover:bg-white transition">
-                        <User className="text-gray-400" size={18} />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-3 border-b border-gray-50">
+                <div>
+                  <h2 className="font-black text-gray-800 text-base flex items-center gap-2">
+                    <MessageSquare size={18} className="text-green-600" /> Customer Chats & Order Lifecycle (Past 7 Days)
+                  </h2>
+                  <p className="text-xs text-gray-400 mt-0.5">Manage order stages, trigger re-analysis, or view chat logs.</p>
+                </div>
+                <span className="text-xs font-bold text-gray-500 bg-gray-50 border border-gray-200 px-3 py-1 rounded-full shrink-0">
+                  {conversations.length} Chat(s) Logged
+                </span>
+              </div>
+
+              <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto pr-1">
+                {conversations.map((conv, i) => {
+                  const classification = classifications.find(c => c.phone === conv.phone) || {};
+                  const currentStage = conv.current_stage || classification.current_stage || 'Inquiry';
+                  const summary = classification.summary || (conv.messages?.length ? conv.messages[conv.messages.length - 1].text : 'No messages');
+
+                  return (
+                    <div
+                      key={conv.phone || i}
+                      className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4 px-3 rounded-2xl hover:bg-gray-50/80 transition-all duration-200"
+                    >
+                      <div className="min-w-0 flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center border border-green-100 shrink-0 mt-0.5">
+                          <User className="text-green-600" size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-black text-sm text-gray-800 flex items-center gap-2">
+                            {conv.contact_name || classification.contact || 'Customer'}
+                            <span className="font-semibold text-xs text-gray-400">· {conv.phone}</span>
+                          </p>
+                          <p className="text-xs text-gray-500 font-medium truncate mt-1 max-w-[280px] md:max-w-[420px]">
+                            {summary}
+                          </p>
+                          {conv.messages?.length > 0 && (
+                            <p className="text-[10px] text-gray-400 font-semibold mt-1">
+                              {conv.messages.length} message(s) · Last updated: {conv.last_updated ? new Date(conv.last_updated).toLocaleDateString('en-IN') : 'Recently'}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-black text-sm text-gray-800 flex items-center gap-1.5">
-                          {c.contact}
-                          <span className="font-semibold text-xs text-gray-400">· {c.phone}</span>
-                        </p>
-                        <p className="text-xs text-gray-500 font-medium truncate mt-0.5 max-w-[300px] md:max-w-[500px]">
-                          {c.summary}
-                        </p>
+
+                      <div className="flex items-center gap-3 shrink-0 self-end md:self-center flex-wrap">
+                        {/* Lifecycle Stage Selector */}
+                        <div className="flex items-center gap-1 bg-indigo-50/60 border border-indigo-100 rounded-xl px-2.5 py-1">
+                          <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Stage:</span>
+                          <select
+                            value={currentStage}
+                            onChange={(e) => handleStageChange(conv.phone, e.target.value)}
+                            className="bg-transparent text-xs font-black text-indigo-900 focus:outline-none cursor-pointer"
+                          >
+                            <option value="Inquiry">Inquiry</option>
+                            <option value="On-Hold">On-Hold</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="In-Progress">In-Progress</option>
+                            <option value="Returned">Returned</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                          </select>
+                        </div>
+
+                        {/* Re-analyze Button */}
+                        <button
+                          onClick={() => handleReanalyzeChat(conv.phone)}
+                          className="flex items-center gap-1 bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100 font-bold text-xs px-3 py-1.5 rounded-xl transition"
+                          title="Reset state and re-run AI digest analysis for this conversation"
+                        >
+                          <RefreshCw size={12} className={analyzing ? 'animate-spin' : ''} />
+                          Re-analyze
+                        </button>
+
+                        {/* View Chat Button */}
+                        <button
+                          onClick={() => setSelectedPhone(conv.phone)}
+                          className="flex items-center gap-1 bg-green-600 text-white font-bold text-xs px-3 py-1.5 rounded-xl hover:bg-green-700 transition shadow-sm"
+                        >
+                          View Chat <ChevronRight size={14} />
+                        </button>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-3 shrink-0">
-                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                        {c.current_stage && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-indigo-50 border border-indigo-100 text-indigo-700">
-                            {c.current_stage}
-                          </span>
-                        )}
-                        {c.needs_review && (
-                          <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                            <AlertCircle size={10} /> review
-                          </span>
-                        )}
-                        <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${INTENT_STYLE[c.intent] || INTENT_STYLE.general_chat}`}>
-                          {c.intent?.replace('_', ' ')}
-                        </span>
-                      </div>
-                      <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-600 transition" />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

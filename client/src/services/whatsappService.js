@@ -77,4 +77,16 @@ export const whatsappService = {
     const response = await API.post('/api/ai/whatsapp/drive/sync-file', { fileId });
     return response.data;
   },
+
+  // POST re-analyze a specific conversation
+  reanalyzeConversation: async (phone) => {
+    const response = await API.post('/api/ai/whatsapp/conversations/reanalyze', { phone });
+    return response.data;
+  },
+
+  // POST update order lifecycle stage for a conversation
+  updateConversationStage: async (phone, stage) => {
+    const response = await API.post('/api/ai/whatsapp/conversations/stage', { phone, stage });
+    return response.data;
+  },
 };
