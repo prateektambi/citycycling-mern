@@ -52,12 +52,12 @@ async function syncAdminGoogleDrive(user) {
           for (const [filename, fileObj] of Object.entries(zip.files)) {
             if (!fileObj.dir && filename.toLowerCase().endsWith('.txt')) {
               const content = await fileObj.async('text');
-              payloadFiles.push({ name: filename, content });
+              payloadFiles.push({ filename: filename, content });
             }
           }
         } else {
           const content = fileBuffer.toString('utf8');
-          payloadFiles.push({ name: file.name, content });
+          payloadFiles.push({ filename: file.name, content });
         }
 
         if (payloadFiles.length > 0) {

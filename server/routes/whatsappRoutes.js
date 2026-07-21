@@ -217,12 +217,12 @@ router.post('/drive/sync-file', protect, async (req, res) => {
       for (const [filename, fileObj] of Object.entries(zip.files)) {
         if (!fileObj.dir && filename.toLowerCase().endsWith('.txt')) {
           const content = await fileObj.async('text');
-          payloadFiles.push({ name: filename, content });
+          payloadFiles.push({ filename: filename, content });
         }
       }
     } else {
       const content = fileBuffer.toString('utf8');
-      payloadFiles.push({ name: targetFile.name, content });
+      payloadFiles.push({ filename: targetFile.name, content });
     }
 
     if (payloadFiles.length === 0) {
