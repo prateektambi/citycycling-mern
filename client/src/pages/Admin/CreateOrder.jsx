@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { productService } from '../../services/productService';
 import { orderService } from '../../services/orderService';
 import { userService } from '../../services/userService';
@@ -9,6 +9,7 @@ import {
 
 const CreateOrder = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [availableProducts, setAvailableProducts] = useState([]);
     const [orderData, setOrderData] = useState({
         customer: { name: '', email: '', phone: '', alternatePhone: '', address: '', pincode: '' },
@@ -34,7 +35,27 @@ const CreateOrder = () => {
 
     useEffect(() => {
         productService.getAll(true).then(data => setAvailableProducts(data || []));
-    }, []);
+
+        if (location.state?.prefillCustomer) {
+            const pre = location.state.prefillCustomer;
+            setOrderData(prev => ({
+                ...prev,
+                customer: {
+                    ...prev.customer,
+                    name: pre.name || prev.customer.name,
+                    email: pre.email || prev.customer.email,
+                    phone: pre.phone || prev.customer.phone,
+                    alternatePhone: pre.alternatePhone || prev.customer.alternatePhone,
+                    address: pre.address || prev.customer.address,
+                },
+                initialPayment: {
+                    ...prev.initialPayment,
+                    amount: pre.amountReceived || prev.initialPayment.amount,
+                    note: pre.paymentNote || prev.initialPayment.note,
+                }
+            }));
+        }
+    }, [location.state]);
 
     // --- RENTAL CALCULATION LOGIC ---
     useEffect(() => {

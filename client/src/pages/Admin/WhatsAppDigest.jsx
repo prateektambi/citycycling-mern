@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   MessageSquare, Upload, RefreshCw, Sparkles, Star, ListChecks,
   AlertCircle, Send, Loader2, CheckCircle2, FileText, Database,
-  Search, X, ChevronRight, User, Download, ExternalLink, Lock
+  Search, X, ChevronRight, User, Download, ExternalLink, Lock,
+  ThumbsUp, ThumbsDown, PlusCircle, Check, ShoppingBag, Eye
 } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
 import JSZip from 'jszip';
@@ -41,10 +42,63 @@ const WhatsAppDigest = () => {
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [syncingFileId, setSyncingFileId] = useState(null);
   
+  const navigate = useNavigate();
   // Conversations list & interactive chat view states
   const [conversations, setConversations] = useState([]);
   const [selectedPhone, setSelectedPhone] = useState(null);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
+  const [drawerTab, setDrawerTab] = useState('messages'); // 'messages' | 'analysis' | 'order'
+  const [feedbackRating, setFeedbackRating] = useState(null);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [expandedSummaryPhone, setExpandedSummaryPhone] = useState(null);
+
+  const extractOrderParams = (conv, classification) => {
+    const messages = conv?.messages || [];
+    const fullText = messages.map(m => m.text).join('\n');
+
+    let email = '';
+    const emailMatch = fullText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    if (emailMatch) email = emailMatch[0];
+
+    let alternatePhone = '';
+    const phoneMatch = fullText.match(/(?:alt|alternate|phone|number|num)?\s*[-:]?\s*([6-9]\d{9})/i);
+    if (phoneMatch) alternatePhone = phoneMatch[1];
+
+    let address = '';
+    const addressMatch = fullText.match(/(?:address|location|located at)\s*[-:]?\s*([^\n]+)/i);
+    if (addressMatch) address = addressMatch[1];
+
+    let bikeModel = '';
+    const bikeMatch = fullText.match(/(Scott|Sportster|Trek|Giant|Montra|Firefox|Btwin|Rockrider|Hybrid|Gear|Non-Gear)[^\n,]*/i);
+    if (bikeMatch) bikeModel = bikeMatch[0];
+
+    let amountReceived = 0;
+    const amountMatch = fullText.match(/(?:received|paid|token)\s*₹?\s*(\d+)/i);
+    if (amountMatch) amountReceived = parseInt(amountMatch[1], 10);
+
+    return {
+      name: conv?.contact_name || classification?.contact || 'Customer',
+      phone: conv?.phone || '',
+      email,
+      alternatePhone,
+      address,
+      bikeModel,
+      amountReceived,
+      paymentNote: amountReceived ? `WhatsApp payment received: ₹${amountReceived}` : '',
+    };
+  };
+
+  const handleSendFeedback = async () => {
+    if (!selectedPhone || !feedbackRating) return;
+    try {
+      await whatsappService.submitAIFeedback(selectedPhone, feedbackRating, feedbackComment);
+      setFeedbackSubmitted(true);
+      setTimeout(() => setFeedbackSubmitted(false), 3000);
+    } catch (e) {
+      setError('Failed to submit feedback');
+    }
+  };
 
   const pollRef = useRef(null);
 
@@ -579,12 +633,8 @@ const WhatsAppDigest = () => {
                   const classification = classifications.find(c => c.phone === conv.phone) || {};
                   const currentStage = conv.current_stage || classification.current_stage || 'Inquiry';
                   const summary = classification.summary || (conv.messages?.length ? conv.messages[conv.messages.length - 1].text : 'No messages');
+                  const isExpanded = expandedSummaryPhone === conv.phone;
 
-                  return (
-                    <div
-                      key={conv.phone || i}
-                      className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4 px-3 rounded-2xl hover:bg-gray-50/80 transition-all duration-200"
-                    >
                       <div className="min-w-0 flex items-start gap-3">
                         <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center border border-green-100 shrink-0 mt-0.5">
                           <User className="text-green-600" size={18} />
@@ -594,7 +644,11 @@ const WhatsAppDigest = () => {
                             {conv.contact_name || classification.contact || 'Customer'}
                             <span className="font-semibold text-xs text-gray-400">· {conv.phone}</span>
                           </p>
-                          <p className="text-xs text-gray-500 font-medium truncate mt-1 max-w-[280px] md:max-w-[420px]">
+                          <p 
+                            onClick={() => setExpandedSummaryPhone(isExpanded ? null : conv.phone)}
+                            className={`text-xs text-gray-600 font-medium cursor-pointer hover:text-gray-900 mt-1 max-w-[280px] md:max-w-[420px] ${isExpanded ? '' : 'truncate'}`}
+                            title="Click to expand/collapse full summary"
+                          >
                             {summary}
                           </p>
                           {conv.messages?.length > 0 && (
@@ -636,7 +690,10 @@ const WhatsAppDigest = () => {
 
                         {/* View Chat Button */}
                         <button
-                          onClick={() => setSelectedPhone(conv.phone)}
+                          onClick={() => {
+                            setSelectedPhone(conv.phone);
+                            setDrawerTab('messages');
+                          }}
                           className="flex items-center gap-1 bg-green-600 text-white font-bold text-xs px-3 py-1.5 rounded-xl hover:bg-green-700 transition shadow-sm"
                         >
                           View Chat <ChevronRight size={14} />
@@ -655,114 +712,6 @@ const WhatsAppDigest = () => {
         </div>
       )}
 
-      {/* WhatsApp Message Logs Slide Drawer View */}
-      {selectedPhone && (
-        <div className="fixed inset-0 z-50 overflow-hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 overflow-hidden">
-            {/* Overlay */}
-            <div
-              onClick={() => setSelectedPhone(null)}
-              className="absolute inset-0 bg-gray-500 bg-opacity-40 backdrop-blur-sm transition-opacity"
-            />
-
-            <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-              <div className="pointer-events-auto w-screen max-w-md md:max-w-lg transform transition-all duration-500 ease-in-out slide-in-from-right">
-                <div className="flex h-full flex-col bg-[#efeae2] shadow-2xl relative">
-                  
-                  {/* WhatsApp Top Navigation Bar */}
-                  <div className="bg-[#008069] px-4 py-3 flex items-center justify-between text-white shrink-0 shadow-md">
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => setSelectedPhone(null)}
-                        className="p-1 hover:bg-teal-700/50 rounded-full transition md:hidden"
-                      >
-                        <X size={20} />
-                      </button>
-                      <div className="w-10 h-10 rounded-full bg-white/20 border border-white/10 flex items-center justify-center">
-                        <User className="text-white" size={20} />
-                      </div>
-                      <div>
-                        <h3 className="font-black text-sm leading-tight truncate max-w-[180px] md:max-w-[240px]">
-                          {activeConversation?.contact_name || 'Chat Logs'}
-                        </h3>
-                        <p className="text-[11px] font-semibold text-teal-100/90 mt-0.5">
-                          {activeConversation?.phone}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setSelectedPhone(null)}
-                        className="p-1.5 hover:bg-teal-700/50 rounded-full transition hidden md:block"
-                        title="Close chat"
-                      >
-                        <X size={20} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Messaging History Area Search Bar */}
-                  <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center gap-2 shrink-0">
-                    <div className="relative w-full">
-                      <Search className="absolute left-3 top-2.5 text-gray-400" size={15} />
-                      <input
-                        type="text"
-                        placeholder="Search message logs..."
-                        value={chatSearchQuery}
-                        onChange={(e) => setChatSearchQuery(e.target.value)}
-                        className="w-full bg-gray-50 border border-gray-200 rounded-full py-1.5 pl-9 pr-8 text-xs font-semibold text-gray-700 focus:outline-none focus:border-green-400 transition"
-                      />
-                      {chatSearchQuery && (
-                        <button
-                          onClick={() => setChatSearchQuery('')}
-                          className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-                        >
-                          <X size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Messages Bubble Stream */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
-                    {filteredMessages.length === 0 ? (
-                      <div className="h-full flex items-center justify-center">
-                        <p className="text-xs text-gray-400 font-bold bg-white/70 px-3 py-1.5 rounded-full shadow-sm">No matching messages</p>
-                      </div>
-                    ) : (
-                      filteredMessages.map((msg, index) => {
-                        const isCustomer = msg.sender !== 'ASSISTANT' && 
-                                           !msg.sender.toLowerCase().includes('assistant') && 
-                                           !msg.sender.toLowerCase().includes('city cycling') && 
-                                           !msg.sender.toLowerCase().includes('bot');
-                        
-                        return (
-                          <div
-                            key={index}
-                            className={`flex ${isCustomer ? 'justify-start' : 'justify-end'} w-full`}
-                          >
-                            <div
-                              className={`max-w-[85%] rounded-xl px-3 py-1.5 shadow-sm text-sm relative ${
-                                isCustomer 
-                                  ? 'bg-white text-gray-800 rounded-tl-none' 
-                                  : 'bg-[#d9fdd3] text-gray-800 rounded-tr-none'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between gap-4">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-wide">
-                                  {msg.sender}
-                                </span>
-                              </div>
-                              <p className="mt-1 font-semibold whitespace-pre-wrap leading-relaxed text-[13px]">
-                                {msg.text}
-                              </p>
-                              <span className="block text-[9px] text-gray-400 font-bold text-right mt-1">
-                                {msg.ts ? new Date(msg.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                              </span>
-                            </div>
-                          </div>
-                        );
                       })
                     )}
                   </div>

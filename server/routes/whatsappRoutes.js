@@ -284,4 +284,15 @@ router.post('/conversations/stage', protect, async (req, res) => {
   }
 });
 
+// POST /api/ai/whatsapp/feedback
+router.post('/feedback', protect, async (req, res) => {
+  try {
+    const url = `${config.AI_SERVICE_URL}/api/whatsapp/feedback`;
+    const response = await aiClient.post(url, req.body, { headers: authHeaders() });
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

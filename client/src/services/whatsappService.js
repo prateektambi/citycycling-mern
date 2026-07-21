@@ -89,4 +89,10 @@ export const whatsappService = {
     const response = await API.post('/api/ai/whatsapp/conversations/stage', { phone, stage });
     return response.data;
   },
+
+  // POST submit AI feedback
+  submitAIFeedback: async (phone, rating, comment) => {
+    const response = await API.post('/api/ai/whatsapp/feedback', { phone, rating, comment });
+    return response.data;
+  },
 };
