@@ -566,7 +566,12 @@ const WhatsAppDigest = () => {
                     </div>
                     
                     <div className="flex items-center gap-3 shrink-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        {c.current_stage && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-indigo-50 border border-indigo-100 text-indigo-700">
+                            {c.current_stage}
+                          </span>
+                        )}
                         {c.needs_review && (
                           <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full flex items-center gap-0.5">
                             <AlertCircle size={10} /> review
