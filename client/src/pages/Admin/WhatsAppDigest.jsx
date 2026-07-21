@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MessageSquare, Upload, RefreshCw, Sparkles, Star, ListChecks,
@@ -529,28 +530,23 @@ const WhatsAppDigest = () => {
         </div>
       )}
 
-      {/* Digest View */}
-      {!digest ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 text-center">
-          <MessageSquare className="mx-auto text-gray-300 mb-3" size={40} />
-          <h4 className="font-bold text-gray-700 text-base">No chat digests found</h4>
-          <p className="text-sm text-gray-400 mt-1 max-w-sm mx-auto">Upload a WhatsApp backup manually or sync your Google Drive folder to kick off the analysis.</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          
-          {/* Summary Panel */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-50">
-              <h2 className="font-black text-gray-800 text-lg flex items-center gap-2">
-                <Sparkles size={20} className="text-green-600" /> Executive AI Summary
-              </h2>
-              <span className="text-xs font-bold text-gray-400 bg-gray-50 border border-gray-100 px-3 py-1 rounded-full">
-                Period: {digest.period} · {digest.conversations_analyzed} chats
-              </span>
-            </div>
-            <p className="text-sm text-gray-700 leading-relaxed font-medium">{digest.summary}</p>
+      {/* Executive AI Summary Panel */}
+      {digest?.summary && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+          <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-50">
+            <h2 className="font-black text-gray-800 text-lg flex items-center gap-2">
+              <Sparkles size={20} className="text-green-600" /> Executive AI Summary
+            </h2>
+            <span className="text-xs font-bold text-gray-400 bg-gray-50 border border-gray-100 px-3 py-1 rounded-full">
+              Period: {digest.period || 'Today'} · {digest.conversations_analyzed || 0} chats
+            </span>
           </div>
+          <p className="text-sm text-gray-700 leading-relaxed font-medium">{digest.summary}</p>
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      <div className="space-y-6">
 
           {/* Action items */}
           {actionItems.length > 0 && (
@@ -710,11 +706,12 @@ const WhatsAppDigest = () => {
             </div>
           )}
 
-          <p className="text-center text-[10px] font-bold text-gray-400">
-            Generated {digest.generated_at ? new Date(digest.generated_at).toLocaleString('en-IN') : '—'} · digest {digest.digest_id}
-          </p>
+          {digest && (
+            <p className="text-center text-[10px] font-bold text-gray-400">
+              Generated {digest?.generated_at ? new Date(digest.generated_at).toLocaleString('en-IN') : '—'} · digest {digest?.digest_id || '—'}
+            </p>
+          )}
         </div>
-      )}
 
     </div>
   );
