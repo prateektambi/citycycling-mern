@@ -634,7 +634,11 @@ const WhatsAppDigest = () => {
                   const currentStage = conv.current_stage || classification.current_stage || 'Inquiry';
                   const summary = classification.summary || (conv.messages?.length ? conv.messages[conv.messages.length - 1].text : 'No messages');
                   const isExpanded = expandedSummaryPhone === conv.phone;
-
+                  return (
+                    <div
+                      key={conv.phone || i}
+                      className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4 px-3 rounded-2xl hover:bg-gray-50/80 transition-all duration-200"
+                    >
                       <div className="min-w-0 flex items-start gap-3">
                         <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center border border-green-100 shrink-0 mt-0.5">
                           <User className="text-green-600" size={18} />
@@ -709,17 +713,6 @@ const WhatsAppDigest = () => {
           <p className="text-center text-[10px] font-bold text-gray-400">
             Generated {digest.generated_at ? new Date(digest.generated_at).toLocaleString('en-IN') : '—'} · digest {digest.digest_id}
           </p>
-        </div>
-      )}
-
-                      })
-                    )}
-                  </div>
-
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
