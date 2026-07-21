@@ -9,6 +9,7 @@ import {
 import { useGoogleLogin } from '@react-oauth/google';
 import JSZip from 'jszip';
 import { whatsappService } from '../../services/whatsappService';
+import { orderService } from '../../services/orderService';
 
 const INTENT_STYLE = {
   order_inquiry: 'bg-blue-100 text-blue-700',
@@ -56,39 +57,110 @@ const WhatsAppDigest = () => {
 
   const extractOrderParams = (conv, classification) => {
     const messages = conv?.messages || [];
+    
+    // Separate customer messages vs all messages
+    const customerMsgs = messages.filter(m => 
+      m.sender !== 'ASSISTANT' && 
+      !m.sender?.toLowerCase().includes('assistant') && 
+      !m.sender?.toLowerCase().includes('city cycling') && 
+      !m.sender?.toLowerCase().includes('bot')
+    );
+
+    const customerText = customerMsgs.map(m => m.text).join('\n');
     const fullText = messages.map(m => m.text).join('\n');
+
+    // 1. Primary Phone comes ONLY from numeric metadata phone
+    const rawPhoneOrName = conv?.phone || conv?.thread_id || '';
+    const isNumericPhone = /^[+\d\s\-()]{7,16}$/.test(rawPhoneOrName) && /\d{5,}/.test(rawPhoneOrName);
+
+    let primaryPhone = isNumericPhone ? rawPhoneOrName.replace(/\D/g, '') : '';
+    let extractedName = conv?.contact_name || classification?.contact;
+
+    if (!extractedName || extractedName === 'Customer') {
+      if (!isNumericPhone && rawPhoneOrName && !rawPhoneOrName.includes('.txt')) {
+        extractedName = rawPhoneOrName;
+      } else {
+        extractedName = 'Customer';
+      }
+    }
+
+    // 2. Strict Rule: Any 10-digit number typed in chat text goes strictly to Alternate Phone!
+    const phoneTypedInChat = [...customerText.matchAll(/(?:\+?91[\s-]?)?([6-9]\d{9})/g)].map(m => m[1]);
+    let alternatePhone = phoneTypedInChat[0] || '';
 
     let email = '';
     const emailMatch = fullText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
     if (emailMatch) email = emailMatch[0];
 
-    let alternatePhone = '';
-    const phoneMatch = fullText.match(/(?:alt|alternate|phone|number|num)?\s*[-:]?\s*([6-9]\d{9})/i);
-    if (phoneMatch) alternatePhone = phoneMatch[1];
-
     let address = '';
-    const addressMatch = fullText.match(/(?:address|location|located at)\s*[-:]?\s*([^\n]+)/i);
-    if (addressMatch) address = addressMatch[1];
+    const isUrl = (txt) => /https?:\/\//i.test(txt);
+    const isShopLocation = (txt) => /city\s*cycling|our\s*store|our\s*shop|pickup\s*location|shop\s*address/i.test(txt);
+
+    // 1. Search customer messages line by line for explicit address keywords
+    for (const m of customerMsgs) {
+      const text = m.text || '';
+      if (isShopLocation(text)) continue;
+
+      const addrMatch = text.match(/(?:delivery address|my address|address|deliver to|location|drop at)\s*[-:]?\s*([^\n]+)/i);
+      if (addrMatch && !isShopLocation(addrMatch[1])) {
+        address = addrMatch[1].trim();
+        break;
+      }
+    }
+
+    // 2. If no explicit label, check customer messages for common address keywords
+    if (!address) {
+      for (const m of customerMsgs) {
+        const text = (m.text || '').trim();
+        if (isUrl(text) || isShopLocation(text)) continue;
+        if (/(?:flat|apartment|apt|house|no|street|road|layout|society|tower|block|sector|near|opp|behind|bangalore|bengaluru|casablanca|express)/i.test(text)) {
+          address = text;
+          break;
+        }
+      }
+    }
+
+    let pincode = '';
+    const pinMatch = customerText.match(/\b([1-9][0-9]{5})\b/);
+    if (pinMatch) pincode = pinMatch[1];
 
     let bikeModel = '';
-    const bikeMatch = fullText.match(/(Scott|Sportster|Trek|Giant|Montra|Firefox|Btwin|Rockrider|Hybrid|Gear|Non-Gear)[^\n,]*/i);
+    const bikeMatch = customerText.match(/(Scott|Sportster|Trek|Giant|Montra|Firefox|Btwin|Rockrider|Hybrid|Gear|Non-Gear)[^\n,]*/i);
     if (bikeMatch) bikeModel = bikeMatch[0];
 
+    let rentalRates = '';
+    const rateMatch = fullText.match(/(?:rate|price|cost|rent)\s*[-:]?\s*(₹?\s*\d+(?:\s*\/\s*(?:day|week|month))?)/i);
+    if (rateMatch) rentalRates = rateMatch[1];
+
     let amountReceived = 0;
-    const amountMatch = fullText.match(/(?:received|paid|token)\s*₹?\s*(\d+)/i);
+    const amountMatch = customerText.match(/(?:received|paid|token|sent|upi|gpay|paytm)\s*₹?\s*(\d+)/i) ||
+                        fullText.match(/(?:received|paid|token)\s*₹?\s*(\d+)/i);
     if (amountMatch) amountReceived = parseInt(amountMatch[1], 10);
 
     return {
-      name: conv?.contact_name || classification?.contact || 'Customer',
-      phone: conv?.phone || '',
+      name: extractedName,
+      phone: primaryPhone,
       email,
       alternatePhone,
       address,
+      pincode,
       bikeModel,
+      rentalRates,
       amountReceived,
       paymentNote: amountReceived ? `WhatsApp payment received: ₹${amountReceived}` : '',
     };
   };
+
+  const [systemOrders, setSystemOrders] = useState([]);
+
+  const loadSystemOrders = useCallback(async () => {
+    try {
+      const res = await orderService.getAll();
+      setSystemOrders(Array.isArray(res) ? res : res?.orders || []);
+    } catch (e) {
+      console.error('Failed to load system orders:', e);
+    }
+  }, []);
 
   const handleSendFeedback = async () => {
     if (!selectedPhone || !feedbackRating) return;
@@ -158,8 +230,9 @@ const WhatsAppDigest = () => {
     loadDigest();
     loadConversations();
     loadDriveStatus();
+    loadSystemOrders();
     return () => pollRef.current && clearInterval(pollRef.current);
-  }, [loadDigest, loadConversations, loadDriveStatus]);
+  }, [loadDigest, loadConversations, loadDriveStatus, loadSystemOrders]);
 
   // Poll for a digest newer than `prevGeneratedAt` (background job just kicked off).
   const pollForNewDigest = (prevGeneratedAt) => {
@@ -968,69 +1041,126 @@ const WhatsAppDigest = () => {
                     )}
 
                     {/* TAB 3: ORDER ACTIONS */}
-                    {drawerTab === 'order' && (
-                      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
-                        {/* Extracted Parameters Card */}
-                        <div className="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-sm space-y-4">
-                          <h4 className="font-black text-gray-900 text-sm flex items-center gap-2 border-b border-gray-100 pb-3">
-                            <FileText className="text-green-600" size={16} /> Extracted Order Parameters
-                          </h4>
+                    {drawerTab === 'order' && (() => {
+                      const cleanPhone = (ph) => String(ph || '').replace(/\D/g, '');
+                      const targetPhone = cleanPhone(selectedPhone);
+                      const targetAlt = cleanPhone(extractedParams.alternatePhone);
+                      const targetEmail = (extractedParams.email || '').toLowerCase().trim();
 
-                          <div className="space-y-2.5 text-xs">
-                            <div className="flex justify-between py-1.5 border-b border-gray-50">
-                              <span className="font-bold text-gray-400">Customer Name:</span>
-                              <span className="font-black text-gray-800">{extractedParams.name}</span>
+                      const matchingOrders = systemOrders.filter(ord => {
+                        const p1 = cleanPhone(ord.customer?.phone);
+                        const p2 = cleanPhone(ord.customer?.alternatePhone);
+                        const em = (ord.customer?.email || '').toLowerCase().trim();
+
+                        const phoneMatch = targetPhone && (p1.includes(targetPhone) || targetPhone.includes(p1) || p2.includes(targetPhone));
+                        const altMatch = targetAlt && (p1.includes(targetAlt) || p2.includes(targetAlt));
+                        const emailMatch = targetEmail && em && em === targetEmail;
+
+                        return phoneMatch || altMatch || emailMatch;
+                      });
+
+                      return (
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
+                          {/* Existing System Orders Card (If Found) */}
+                          {matchingOrders.length > 0 ? (
+                            <div className="bg-amber-50/80 rounded-2xl p-5 border border-amber-200/80 shadow-sm space-y-3">
+                              <div className="flex items-center justify-between border-b border-amber-200/50 pb-2">
+                                <h4 className="font-black text-amber-900 text-sm flex items-center gap-2">
+                                  <Database className="text-amber-600" size={16} /> Linked Order Found ({matchingOrders.length})
+                                </h4>
+                                <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                                  In Database
+                                </span>
+                              </div>
+
+                              <div className="space-y-3">
+                                {matchingOrders.map(ord => (
+                                  <div key={ord._id || ord.orderId} className="bg-white rounded-xl p-3 border border-amber-100 flex items-center justify-between text-xs">
+                                    <div>
+                                      <p className="font-black text-gray-800">Order #{ord.orderId}</p>
+                                      <p className="text-[11px] text-gray-500 font-medium mt-0.5">
+                                        Status: <span className="font-bold text-indigo-600">{ord.orderState || ord.orderStatus}</span> · Total: ₹{ord.financials?.grandTotal || 0}
+                                      </p>
+                                    </div>
+                                    <button
+                                      onClick={() => navigate(`/admin/orders`)}
+                                      className="flex items-center gap-1 bg-amber-600 text-white font-bold text-[11px] px-3 py-1.5 rounded-lg hover:bg-amber-700 transition"
+                                    >
+                                      View Order <ExternalLink size={12} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            <div className="flex justify-between py-1.5 border-b border-gray-50">
-                              <span className="font-bold text-gray-400">Phone:</span>
-                              <span className="font-black text-gray-800">{extractedParams.phone}</span>
+                          ) : (
+                            <div className="bg-blue-50/50 rounded-2xl p-4 border border-blue-100 text-xs text-blue-700 flex items-center gap-2 font-semibold">
+                              <Database size={16} className="text-blue-500 shrink-0" />
+                              No existing order found in system for this customer.
                             </div>
-                            {extractedParams.email && (
+                          )}
+
+                          {/* Extracted Parameters Card */}
+                          <div className="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-sm space-y-4">
+                            <h4 className="font-black text-gray-900 text-sm flex items-center gap-2 border-b border-gray-100 pb-3">
+                              <FileText className="text-green-600" size={16} /> Extracted Order Parameters (From Chat)
+                            </h4>
+
+                            <div className="space-y-2.5 text-xs">
+                              <div className="flex justify-between py-1.5 border-b border-gray-50">
+                                <span className="font-bold text-gray-400">Customer Name:</span>
+                                <span className="font-black text-gray-800">{extractedParams.name || '—'}</span>
+                              </div>
+                              <div className="flex justify-between py-1.5 border-b border-gray-50">
+                                <span className="font-bold text-gray-400">Phone:</span>
+                                <span className="font-black text-gray-800">{extractedParams.phone || '—'}</span>
+                              </div>
                               <div className="flex justify-between py-1.5 border-b border-gray-50">
                                 <span className="font-bold text-gray-400">Email:</span>
-                                <span className="font-black text-gray-800">{extractedParams.email}</span>
+                                <span className="font-black text-gray-800">{extractedParams.email || 'Not specified'}</span>
                               </div>
-                            )}
-                            {extractedParams.alternatePhone && (
                               <div className="flex justify-between py-1.5 border-b border-gray-50">
                                 <span className="font-bold text-gray-400">Alternate Phone:</span>
-                                <span className="font-black text-gray-800">{extractedParams.alternatePhone}</span>
+                                <span className="font-black text-gray-800">{extractedParams.alternatePhone || 'Not specified'}</span>
                               </div>
-                            )}
-                            {extractedParams.address && (
                               <div className="flex justify-between py-1.5 border-b border-gray-50">
                                 <span className="font-bold text-gray-400">Delivery Address:</span>
-                                <span className="font-black text-gray-800 text-right max-w-[240px]">{extractedParams.address}</span>
+                                <span className="font-black text-gray-800 text-right max-w-[240px]">{extractedParams.address || 'Not specified'}</span>
                               </div>
-                            )}
-                            {extractedParams.bikeModel && (
                               <div className="flex justify-between py-1.5 border-b border-gray-50">
-                                <span className="font-bold text-gray-400">Bike Model:</span>
-                                <span className="font-black text-green-700">{extractedParams.bikeModel}</span>
+                                <span className="font-bold text-gray-400">Pincode:</span>
+                                <span className="font-black text-gray-800">{extractedParams.pincode || 'Not specified'}</span>
                               </div>
-                            )}
-                            {extractedParams.amountReceived > 0 && (
                               <div className="flex justify-between py-1.5 border-b border-gray-50">
-                                <span className="font-bold text-gray-400">Amount Received:</span>
-                                <span className="font-black text-green-600">₹{extractedParams.amountReceived}</span>
+                                <span className="font-bold text-gray-400">Requested Bike Model:</span>
+                                <span className="font-black text-green-700">{extractedParams.bikeModel || 'Not specified'}</span>
                               </div>
-                            )}
-                          </div>
+                              <div className="flex justify-between py-1.5 border-b border-gray-50">
+                                <span className="font-bold text-gray-400">Rental Rates / Duration:</span>
+                                <span className="font-black text-gray-800">{extractedParams.rentalRates || 'Not specified'}</span>
+                              </div>
+                              <div className="flex justify-between py-1.5 border-b border-gray-50">
+                                <span className="font-bold text-gray-400">Amount Received / Deposit:</span>
+                                <span className="font-black text-green-600">
+                                  {extractedParams.amountReceived > 0 ? `₹${extractedParams.amountReceived}` : 'None'}
+                                </span>
+                              </div>
+                            </div>
 
-                          {/* 1-Click Create Order Button */}
-                          <button
-                            onClick={() => {
-                              navigate('/admin/orders/create', {
-                                state: { prefillCustomer: extractedParams }
-                              });
-                            }}
-                            className="w-full bg-green-600 text-white font-black text-xs py-3 rounded-xl hover:bg-green-700 transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
-                          >
-                            <PlusCircle size={16} /> Create Order from Chat Data
-                          </button>
+                            {/* 1-Click Create Order Button */}
+                            <button
+                              onClick={() => {
+                                navigate('/admin/orders/new', {
+                                  state: { prefillCustomer: extractedParams }
+                                });
+                              }}
+                              className="w-full bg-green-600 text-white font-black text-xs py-3 rounded-xl hover:bg-green-700 transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                              <PlusCircle size={16} /> Create Order from Chat Data
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

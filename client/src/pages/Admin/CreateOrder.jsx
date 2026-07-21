@@ -47,6 +47,7 @@ const CreateOrder = () => {
                     phone: pre.phone || prev.customer.phone,
                     alternatePhone: pre.alternatePhone || prev.customer.alternatePhone,
                     address: pre.address || prev.customer.address,
+                    pincode: pre.pincode || prev.customer.pincode,
                 },
                 initialPayment: {
                     ...prev.initialPayment,
@@ -54,6 +55,9 @@ const CreateOrder = () => {
                     note: pre.paymentNote || prev.initialPayment.note,
                 }
             }));
+            if (pre.email) {
+                setSearchEmail(pre.email);
+            }
         }
     }, [location.state]);
 
