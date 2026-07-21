@@ -713,6 +713,332 @@ const WhatsAppDigest = () => {
           )}
         </div>
 
+      {/* Actionable WhatsApp Chat Workspace Drawer */}
+      {selectedPhone && (() => {
+        const activeConv = conversations.find(c => c.phone === selectedPhone || c.thread_id === selectedPhone);
+        const classification = classifications.find(c => c.phone === selectedPhone) || {};
+        const extractedParams = extractOrderParams(activeConv, classification);
+        const filteredMsgs = activeConv?.messages?.filter(m => {
+          if (!chatSearchQuery) return true;
+          return m.text?.toLowerCase().includes(chatSearchQuery.toLowerCase()) || 
+                 m.sender?.toLowerCase().includes(chatSearchQuery.toLowerCase());
+        }) || [];
+
+        return (
+          <div className="fixed inset-0 z-50 overflow-hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+            <div className="absolute inset-0 overflow-hidden">
+              {/* Overlay */}
+              <div
+                onClick={() => setSelectedPhone(null)}
+                className="absolute inset-0 bg-gray-500 bg-opacity-40 backdrop-blur-sm transition-opacity"
+              />
+
+              <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+                <div className="pointer-events-auto w-screen max-w-md md:max-w-xl transform transition-all duration-500 ease-in-out slide-in-from-right">
+                  <div className="flex h-full flex-col bg-white shadow-2xl relative">
+                    
+                    {/* Top Navigation Bar */}
+                    <div className="bg-[#008069] px-4 py-3 flex items-center justify-between text-white shrink-0 shadow-md">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setSelectedPhone(null)}
+                          className="p-1 hover:bg-teal-700/50 rounded-full transition md:hidden"
+                        >
+                          <X size={20} />
+                        </button>
+                        <div className="w-10 h-10 rounded-full bg-white/20 border border-white/10 flex items-center justify-center">
+                          <User className="text-white" size={20} />
+                        </div>
+                        <div>
+                          <h3 className="font-black text-sm leading-tight truncate max-w-[180px] md:max-w-[280px]">
+                            {activeConv?.contact_name || classification.contact || 'Chat Workspace'}
+                          </h3>
+                          <p className="text-[11px] font-semibold text-teal-100/90 mt-0.5">
+                            {activeConv?.phone || selectedPhone}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setSelectedPhone(null)}
+                          className="p-1.5 hover:bg-teal-700/50 rounded-full transition hidden md:block"
+                          title="Close drawer"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Workspace Tabs Navigation Bar */}
+                    <div className="bg-[#006e5a] px-4 py-2 flex items-center justify-around text-white shrink-0 border-t border-teal-700/50">
+                      <button
+                        onClick={() => setDrawerTab('messages')}
+                        className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition ${drawerTab === 'messages' ? 'bg-white text-teal-900 shadow-sm' : 'text-teal-100 hover:bg-teal-700/50'}`}
+                      >
+                        <MessageSquare size={14} /> Messages
+                      </button>
+                      <button
+                        onClick={() => setDrawerTab('analysis')}
+                        className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition ${drawerTab === 'analysis' ? 'bg-white text-teal-900 shadow-sm' : 'text-teal-100 hover:bg-teal-700/50'}`}
+                      >
+                        <Sparkles size={14} /> AI Analysis
+                      </button>
+                      <button
+                        onClick={() => setDrawerTab('order')}
+                        className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition ${drawerTab === 'order' ? 'bg-white text-teal-900 shadow-sm' : 'text-teal-100 hover:bg-teal-700/50'}`}
+                      >
+                        <ShoppingBag size={14} /> Order Actions
+                      </button>
+                    </div>
+
+                    {/* TAB 1: MESSAGES STREAM */}
+                    {drawerTab === 'messages' && (
+                      <div className="flex-1 flex flex-col bg-[#efeae2] overflow-hidden">
+                        {/* Search Bar */}
+                        <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center gap-2 shrink-0">
+                          <div className="relative w-full">
+                            <Search className="absolute left-3 top-2.5 text-gray-400" size={15} />
+                            <input
+                              type="text"
+                              placeholder="Search message logs..."
+                              value={chatSearchQuery}
+                              onChange={(e) => setChatSearchQuery(e.target.value)}
+                              className="w-full bg-gray-50 border border-gray-200 rounded-full py-1.5 pl-9 pr-8 text-xs font-semibold text-gray-700 focus:outline-none focus:border-green-400 transition"
+                            />
+                            {chatSearchQuery && (
+                              <button
+                                onClick={() => setChatSearchQuery('')}
+                                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                              >
+                                <X size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Messages Bubble Stream */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
+                          {filteredMsgs.length === 0 ? (
+                            <div className="h-full flex items-center justify-center">
+                              <p className="text-xs text-gray-400 font-bold bg-white/70 px-3 py-1.5 rounded-full shadow-sm">No matching messages</p>
+                            </div>
+                          ) : (
+                            filteredMsgs.map((msg, index) => {
+                              const isCustomer = msg.sender !== 'ASSISTANT' && 
+                                                 !msg.sender?.toLowerCase().includes('assistant') && 
+                                                 !msg.sender?.toLowerCase().includes('city cycling') && 
+                                                 !msg.sender?.toLowerCase().includes('bot');
+                              
+                              return (
+                                <div
+                                  key={index}
+                                  className={`flex flex-col ${isCustomer ? 'items-start' : 'items-end'}`}
+                                >
+                                  <div
+                                    className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs shadow-sm ${
+                                      isCustomer
+                                        ? 'bg-white text-gray-800 rounded-tl-none border border-gray-100'
+                                        : 'bg-[#dcf8c6] text-gray-900 rounded-tr-none'
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between gap-4 mb-1 border-b border-black/5 pb-1">
+                                      <span className="font-bold text-[10px] opacity-75">
+                                        {msg.sender}
+                                      </span>
+                                    </div>
+                                    <p className="whitespace-pre-wrap leading-relaxed font-medium">
+                                      {msg.text}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TAB 2: AI ANALYSIS & FEEDBACK */}
+                    {drawerTab === 'analysis' && (
+                      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
+                        {/* Summary & Intent Card */}
+                        <div className="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-sm space-y-4">
+                          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                            <h4 className="font-black text-gray-900 text-sm flex items-center gap-2">
+                              <Sparkles className="text-indigo-600" size={16} /> AI Summary & Intelligence
+                            </h4>
+                            <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full">
+                              Stage: {activeConv?.current_stage || classification.current_stage || 'Inquiry'}
+                            </span>
+                          </div>
+
+                          <div>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Full Summary</p>
+                            <p className="text-xs text-gray-800 font-medium leading-relaxed bg-gray-50 p-3 rounded-xl border border-gray-100">
+                              {classification.summary || 'Classification summary pending or unavailable.'}
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 pt-2">
+                            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                              <p className="text-[10px] font-bold text-gray-400 uppercase">Primary Intent</p>
+                              <p className="text-xs font-black text-gray-800 capitalize mt-0.5">
+                                {classification.intent?.replace('_', ' ') || 'General Chat'}
+                              </p>
+                            </div>
+                            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                              <p className="text-[10px] font-bold text-gray-400 uppercase">Confidence Score</p>
+                              <p className="text-xs font-black text-gray-800 mt-0.5">
+                                {classification.confidence ? `${(classification.confidence * 100).toFixed(0)}%` : '100%'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {classification.categories?.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Detected Categories</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {classification.categories.map((cat, ci) => (
+                                  <span key={ci} className="text-[10px] font-semibold bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded-full">
+                                    #{cat}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* AI Feedback Form Card */}
+                        <div className="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-sm space-y-4">
+                          <h4 className="font-black text-gray-900 text-sm flex items-center gap-2 border-b border-gray-100 pb-3">
+                            <Star className="text-amber-500" size={16} /> Rate AI Classification Accuracy
+                          </h4>
+
+                          <p className="text-xs text-gray-500 font-medium">
+                            Help us improve our AI models! Is this classification and summary accurate?
+                          </p>
+
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => setFeedbackRating('positive')}
+                              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs border transition ${
+                                feedbackRating === 'positive'
+                                  ? 'bg-green-50 border-green-300 text-green-700 shadow-sm'
+                                  : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                              }`}
+                            >
+                              <ThumbsUp size={16} /> Accurate
+                            </button>
+                            <button
+                              onClick={() => setFeedbackRating('negative')}
+                              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs border transition ${
+                                feedbackRating === 'negative'
+                                  ? 'bg-red-50 border-red-300 text-red-700 shadow-sm'
+                                  : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                              }`}
+                            >
+                              <ThumbsDown size={16} /> Incorrect
+                            </button>
+                          </div>
+
+                          <textarea
+                            placeholder="Optional comments or suggestions for the AI model..."
+                            value={feedbackComment}
+                            onChange={(e) => setFeedbackComment(e.target.value)}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs font-medium text-gray-700 focus:outline-none focus:border-indigo-400 transition"
+                            rows={3}
+                          />
+
+                          <button
+                            onClick={handleSendFeedback}
+                            disabled={!feedbackRating}
+                            className="w-full bg-indigo-600 text-white font-bold text-xs py-2.5 rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm flex items-center justify-center gap-2"
+                          >
+                            {feedbackSubmitted ? (
+                              <>
+                                <Check size={16} /> Feedback Submitted!
+                              </>
+                            ) : (
+                              'Submit AI Feedback'
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TAB 3: ORDER ACTIONS */}
+                    {drawerTab === 'order' && (
+                      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
+                        {/* Extracted Parameters Card */}
+                        <div className="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-sm space-y-4">
+                          <h4 className="font-black text-gray-900 text-sm flex items-center gap-2 border-b border-gray-100 pb-3">
+                            <FileText className="text-green-600" size={16} /> Extracted Order Parameters
+                          </h4>
+
+                          <div className="space-y-2.5 text-xs">
+                            <div className="flex justify-between py-1.5 border-b border-gray-50">
+                              <span className="font-bold text-gray-400">Customer Name:</span>
+                              <span className="font-black text-gray-800">{extractedParams.name}</span>
+                            </div>
+                            <div className="flex justify-between py-1.5 border-b border-gray-50">
+                              <span className="font-bold text-gray-400">Phone:</span>
+                              <span className="font-black text-gray-800">{extractedParams.phone}</span>
+                            </div>
+                            {extractedParams.email && (
+                              <div className="flex justify-between py-1.5 border-b border-gray-50">
+                                <span className="font-bold text-gray-400">Email:</span>
+                                <span className="font-black text-gray-800">{extractedParams.email}</span>
+                              </div>
+                            )}
+                            {extractedParams.alternatePhone && (
+                              <div className="flex justify-between py-1.5 border-b border-gray-50">
+                                <span className="font-bold text-gray-400">Alternate Phone:</span>
+                                <span className="font-black text-gray-800">{extractedParams.alternatePhone}</span>
+                              </div>
+                            )}
+                            {extractedParams.address && (
+                              <div className="flex justify-between py-1.5 border-b border-gray-50">
+                                <span className="font-bold text-gray-400">Delivery Address:</span>
+                                <span className="font-black text-gray-800 text-right max-w-[240px]">{extractedParams.address}</span>
+                              </div>
+                            )}
+                            {extractedParams.bikeModel && (
+                              <div className="flex justify-between py-1.5 border-b border-gray-50">
+                                <span className="font-bold text-gray-400">Bike Model:</span>
+                                <span className="font-black text-green-700">{extractedParams.bikeModel}</span>
+                              </div>
+                            )}
+                            {extractedParams.amountReceived > 0 && (
+                              <div className="flex justify-between py-1.5 border-b border-gray-50">
+                                <span className="font-bold text-gray-400">Amount Received:</span>
+                                <span className="font-black text-green-600">₹{extractedParams.amountReceived}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 1-Click Create Order Button */}
+                          <button
+                            onClick={() => {
+                              navigate('/admin/orders/create', {
+                                state: { prefillCustomer: extractedParams }
+                              });
+                            }}
+                            className="w-full bg-green-600 text-white font-black text-xs py-3 rounded-xl hover:bg-green-700 transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                          >
+                            <PlusCircle size={16} /> Create Order from Chat Data
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
 };
