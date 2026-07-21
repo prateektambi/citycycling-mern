@@ -47,4 +47,34 @@ export const whatsappService = {
     });
     return response.data;
   },
+
+  // GET Google Drive Connection Status for current admin
+  getDriveStatus: async () => {
+    const response = await API.get('/api/ai/whatsapp/drive/status');
+    return response.data;
+  },
+
+  // POST save Google Drive Config (code & folderId)
+  saveDriveConfig: async (code, folderId) => {
+    const response = await API.post('/api/ai/whatsapp/drive/config', { code, folderId });
+    return response.data;
+  },
+
+  // POST disconnect Google Drive
+  disconnectDrive: async () => {
+    const response = await API.post('/api/ai/whatsapp/drive/disconnect');
+    return response.data;
+  },
+
+  // GET files list from admin's Google Drive folder
+  getDriveFiles: async () => {
+    const response = await API.get('/api/ai/whatsapp/drive/files');
+    return response.data;
+  },
+
+  // POST trigger manual sync of a specific file ID
+  syncDriveFile: async (fileId) => {
+    const response = await API.post('/api/ai/whatsapp/drive/sync-file', { fileId });
+    return response.data;
+  },
 };

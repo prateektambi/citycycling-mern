@@ -40,6 +40,7 @@ const shippingRoutes = require('./routes/shippingRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const whatsappRoutes = require('./routes/whatsappRoutes');
+const cronService = require('./services/cronService');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/seed', seedRoutes);
@@ -70,4 +71,6 @@ if (process.env.NODE_ENV === 'production') {
 
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
+  // Initialize background scheduler
+  cronService.initScheduler();
 });

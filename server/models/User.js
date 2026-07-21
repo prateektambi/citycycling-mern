@@ -99,7 +99,21 @@ const userSchema = new mongoose.Schema({
   termsAccepted: { type: Boolean, default: false },
   termsAcceptedAt: { type: Date },
   privacyAccepted: { type: Boolean, default: false },
-  privacyAcceptedAt: { type: Date }
+  privacyAcceptedAt: { type: Date },
+
+  // ========== GOOGLE DRIVE CONFIGURATION ==========
+  googleDriveConfig: {
+    isConnected: { type: Boolean, default: false },
+    driveFolderId: { type: String, default: '' },
+    refreshToken: { type: String, default: '' },
+    processedFiles: [
+      {
+        fileId: { type: String, required: true },
+        fileName: { type: String },
+        processedAt: { type: Date, default: Date.now }
+      }
+    ]
+  }
 
 }, { 
   timestamps: true // Adds createdAt and updatedAt automatically

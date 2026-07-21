@@ -33,9 +33,10 @@ const WhatsAppDigest = () => {
   const [digest, setDigest] = useState(null);
   const [error, setError] = useState(null);
   
-  // Google Drive & JSZip states
-  const [googleAccessToken, setGoogleAccessToken] = useState(null);
-  const [driveFolderId, setDriveFolderId] = useState(() => localStorage.getItem('cc_whatsapp_drive_folder_id') || '');
+  // Google Drive integration states
+  const [isDriveConnected, setIsDriveConnected] = useState(false);
+  const [driveFolderId, setDriveFolderId] = useState('');
+  const [tempFolderId, setTempFolderId] = useState('');
   const [driveFiles, setDriveFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [syncingFileId, setSyncingFileId] = useState(null);
@@ -67,11 +68,43 @@ const WhatsAppDigest = () => {
     }
   }, []);
 
+  const fetchDriveFiles = useCallback(async () => {
+    setLoadingFiles(true);
+    setError(null);
+    try {
+      const data = await whatsappService.getDriveFiles();
+      setDriveFiles(data.files || []);
+    } catch (err) {
+      setError(err?.response?.data?.error || err.message || 'Failed to load files.');
+    } finally {
+      setLoadingFiles(false);
+    }
+  }, []);
+
+  const loadDriveStatus = useCallback(async () => {
+    try {
+      const data = await whatsappService.getDriveStatus();
+      setIsDriveConnected(data.isConnected);
+      setDriveFolderId(data.driveFolderId);
+      setTempFolderId(data.driveFolderId);
+      if (data.isConnected) {
+        // Fetch files list if connected
+        setLoadingFiles(true);
+        const filesData = await whatsappService.getDriveFiles();
+        setDriveFiles(filesData.files || []);
+        setLoadingFiles(false);
+      }
+    } catch (e) {
+      console.error('Failed to load Google Drive status:', e);
+    }
+  }, []);
+
   useEffect(() => {
     loadDigest();
     loadConversations();
+    loadDriveStatus();
     return () => pollRef.current && clearInterval(pollRef.current);
-  }, [loadDigest, loadConversations]);
+  }, [loadDigest, loadConversations, loadDriveStatus]);
 
   // Poll for a digest newer than `prevGeneratedAt` (background job just kicked off).
   const pollForNewDigest = (prevGeneratedAt) => {
@@ -137,58 +170,31 @@ const WhatsAppDigest = () => {
     }
   };
 
-  // Google Drive Authorization Handler
+  // Google Drive Authorization Handler (Authorization Code Flow)
   const connectGoogleDrive = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setGoogleAccessToken(tokenResponse.access_token);
-      if (driveFolderId) {
-        fetchDriveFiles(tokenResponse.access_token, driveFolderId);
+    onSuccess: async (codeResponse) => {
+      setError(null);
+      setLoadingFiles(true);
+      try {
+        await whatsappService.saveDriveConfig(codeResponse.code, tempFolderId);
+        setIsDriveConnected(true);
+        setDriveFolderId(tempFolderId);
+        // Reload files
+        const filesData = await whatsappService.getDriveFiles();
+        setDriveFiles(filesData.files || []);
+      } catch (err) {
+        setError(err?.response?.data?.error || err.message || 'Drive authorization failed.');
+      } finally {
+        setLoadingFiles(false);
       }
     },
+    flow: 'auth-code',
     scope: 'https://www.googleapis.com/auth/drive',
     onError: () => setError('Google Drive authorization failed.'),
   });
 
   const handleFolderIdChange = (e) => {
-    const val = e.target.value.trim();
-    setDriveFolderId(val);
-    localStorage.setItem('cc_whatsapp_drive_folder_id', val);
-  };
-
-  const fetchDriveFiles = async (token, folderId) => {
-    if (!folderId) return;
-    setLoadingFiles(true);
-    setError(null);
-    try {
-      // Query zip and text files inside the configured folder
-      const query = `'${folderId}' in parents and trashed = false and (mimeType = 'application/zip' or mimeType = 'text/plain')`;
-      const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,mimeType,size)&orderBy=name`;
-      
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          setGoogleAccessToken(null);
-        }
-        let errMsg = 'Could not fetch files. Check if Folder ID is correct and shared.';
-        try {
-          const errData = await response.json();
-          if (errData?.error?.message) {
-            errMsg = `${errMsg} (Drive API: ${errData.error.message})`;
-          }
-        } catch (_) {}
-        throw new Error(errMsg);
-      }
-      
-      const data = await response.json();
-      setDriveFiles(data.files || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoadingFiles(false);
-    }
+    setTempFolderId(e.target.value.trim());
   };
 
   const handleImportDriveFile = async (file) => {
@@ -197,79 +203,33 @@ const WhatsAppDigest = () => {
     setUploadResult(null);
     const prevGeneratedAt = digest?.generated_at || null;
     try {
-      // Download the media content of the Google Drive File
-      const downloadUrl = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
-      const response = await fetch(downloadUrl, {
-        headers: { Authorization: `Bearer ${googleAccessToken}` },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          setGoogleAccessToken(null);
-        }
-        let errMsg = `Failed to download file from Google Drive.`;
-        try {
-          const errData = await response.json();
-          if (errData?.error?.message) {
-            errMsg = `${errMsg} (Drive API: ${errData.error.message})`;
-          }
-        } catch (_) {}
-        throw new Error(errMsg);
-      }
-
-      let payloadFiles = [];
-      if (file.mimeType === 'application/zip') {
-        const blob = await response.blob();
-        const unzipped = await handleZipFile(blob);
-        payloadFiles.push(...unzipped);
-      } else {
-        const text = await response.text();
-        payloadFiles.push({ name: file.name, content: text });
-      }
-
-      if (payloadFiles.length === 0) {
-        throw new Error('No valid text logs found in the selected Drive file.');
-      }
-
-      const result = await whatsappService.uploadChats(payloadFiles);
+      const result = await whatsappService.syncDriveFile(file.id);
       setUploadResult(result);
       pollForNewDigest(prevGeneratedAt);
-
-      // Automatically delete the file from Google Drive after successful import
-      try {
-        await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${googleAccessToken}` },
-        });
-        setDriveFiles((prev) => prev.filter((f) => f.id !== file.id));
-      } catch (deleteErr) {
-        console.error('Failed to auto-delete file from Google Drive:', deleteErr);
-      }
+      
+      // Refresh files list to show updated isProcessed status
+      const filesData = await whatsappService.getDriveFiles();
+      setDriveFiles(filesData.files || []);
     } catch (err) {
-      setError(err.message);
+      setError(err?.response?.data?.error || err.message || 'File import failed.');
     } finally {
       setSyncingFileId(null);
     }
   };
 
-  const cleanupDriveFolder = async () => {
-    if (!window.confirm("Are you sure you want to delete all zip and text files in this Google Drive folder?")) {
+  const handleDisconnectDrive = async () => {
+    if (!window.confirm("Are you sure you want to disconnect Google Drive?")) {
       return;
     }
-    setLoadingFiles(true);
     setError(null);
     try {
-      for (const file of driveFiles) {
-        await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${googleAccessToken}` },
-        });
-      }
+      await whatsappService.disconnectDrive();
+      setIsDriveConnected(false);
+      setDriveFolderId('');
+      setTempFolderId('');
       setDriveFiles([]);
     } catch (err) {
-      setError(`Failed to clean up some files: ${err.message}`);
-    } finally {
-      setLoadingFiles(false);
+      setError(err?.response?.data?.error || err.message || 'Failed to disconnect.');
     }
   };
 
@@ -387,17 +347,18 @@ const WhatsAppDigest = () => {
                 <input
                   type="text"
                   placeholder="e.g. 1a2b3c4d5e6f7g8h9i0j..."
-                  value={driveFolderId}
+                  value={tempFolderId}
                   onChange={handleFolderIdChange}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-700 focus:outline-none focus:border-blue-400 transition"
+                  disabled={isDriveConnected}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-700 focus:outline-none focus:border-blue-400 transition disabled:opacity-75"
                 />
               </div>
 
-              {!googleAccessToken ? (
+              {!isDriveConnected ? (
                 <button
                   onClick={connectGoogleDrive}
-                  disabled={!driveFolderId}
-                  className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-40 transition active:scale-95"
+                  disabled={!tempFolderId}
+                  className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-40 transition active:scale-95 shadow-sm"
                 >
                   <Lock size={15} /> Authorize & Load Folder
                 </button>
@@ -409,11 +370,7 @@ const WhatsAppDigest = () => {
                         <CheckCircle2 size={13} className="text-green-500" /> Connected
                       </span>
                       <button
-                        onClick={() => {
-                          setGoogleAccessToken(null);
-                          setDriveFiles([]);
-                          setError(null);
-                        }}
+                        onClick={handleDisconnectDrive}
                         className="text-[10px] font-bold text-red-500 hover:underline"
                       >
                         Disconnect
@@ -421,20 +378,11 @@ const WhatsAppDigest = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => fetchDriveFiles(googleAccessToken, driveFolderId)}
+                        onClick={fetchDriveFiles}
                         className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-0.5"
                       >
                         <RefreshCw size={11} className={loadingFiles ? 'animate-spin' : ''} /> reload files
                       </button>
-                      {driveFiles.length > 0 && (
-                        <button
-                          onClick={cleanupDriveFolder}
-                          disabled={loadingFiles}
-                          className="text-xs font-bold text-red-600 hover:underline"
-                        >
-                          Clean up Folder
-                        </button>
-                      )}
                     </div>
                   </div>
                   {loadingFiles ? (
@@ -445,20 +393,27 @@ const WhatsAppDigest = () => {
                     <div className="space-y-1">
                       {driveFiles.map((file) => (
                         <div key={file.id} className="flex items-center justify-between text-xs py-1 border-b border-gray-100 last:border-0">
-                          <span className="truncate max-w-[170px] font-semibold text-gray-700 flex items-center gap-1">
+                          <span className="truncate max-w-[150px] font-semibold text-gray-700 flex items-center gap-1">
                             <FileText size={12} className="text-gray-400 shrink-0" /> {file.name}
+                            {file.isProcessed && (
+                              <CheckCircle2 size={12} className="text-green-500 shrink-0" title="Already Imported" />
+                            )}
                           </span>
                           <button
                             onClick={() => handleImportDriveFile(file)}
                             disabled={syncingFileId !== null}
-                            className="bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold px-2 py-1 rounded transition shrink-0 flex items-center gap-1"
+                            className={`font-bold px-2 py-1 rounded transition shrink-0 flex items-center gap-1 ${
+                              file.isProcessed 
+                                ? 'bg-green-50 text-green-700 hover:bg-green-100'
+                                : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                            }`}
                           >
                             {syncingFileId === file.id ? (
                               <Loader2 className="animate-spin" size={11} />
                             ) : (
                               <Download size={11} />
                             )}
-                            Import
+                            {file.isProcessed ? 'Re-import' : 'Import'}
                           </button>
                         </div>
                       ))}
