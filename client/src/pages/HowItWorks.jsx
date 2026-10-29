@@ -87,7 +87,7 @@ const HowItWorks = () => {
             {/* High-Impact Hero Section (Restored Aesthetic) */}
             <div className="relative h-[60vh] min-h-[500px] flex items-center justify-center overflow-hidden">
                 <img 
-                    src="/images/hero.png" 
+                    src="/images/hero.webp" 
                     alt="Cycling in city" 
                     className="absolute inset-0 w-full h-full object-cover brightness-[0.4]"
                 />
@@ -191,7 +191,7 @@ const HowItWorks = () => {
                         <div className="flex-1 relative">
                             <div className="absolute -inset-16 bg-blue-200/20 rounded-full blur-[100px]"></div>
                             <img 
-                                src="/images/delivery.png" 
+                                src="/images/delivery.webp" 
                                 alt="Delivery illustration" 
                                 className="relative z-10 w-full max-w-lg mx-auto drop-shadow-[0_50px_50px_rgba(0,0,0,0.15)] rounded-[4rem]"
                             />

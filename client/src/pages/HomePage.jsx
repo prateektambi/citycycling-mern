@@ -39,7 +39,7 @@ const HomePage = () => {
             {/* World-Class Hero Section */}
             <div className="relative h-[85vh] min-h-[600px] flex items-center overflow-hidden">
                 <img 
-                    src="/images/home-hero.png" 
+                    src="/images/home-hero.webp" 
                     alt="Happy couple cycling in lush greenery" 
                     className="absolute inset-0 w-full h-full object-cover"
                 />
